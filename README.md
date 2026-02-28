@@ -8,7 +8,7 @@
 
 | Role                    | Responsibility                                      |
 |-------------------------|-----------------------------------------------------|
-| Data Processing Lead    | Implements the 5 CSV processing Python functions    |
+| Haro Data Processing Lead    | Implements the 5 CSV processing Python functions    |
 | DevOps Engineer         | Configures the GitHub Actions CI pipeline           |
 | Tester                  | Writes and validates PyTest test cases              |
 | Documenter / Presenter  | Prepares README and presentation slides             |
