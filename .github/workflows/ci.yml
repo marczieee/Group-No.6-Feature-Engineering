@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history for rebase
 
       # Step 2: Set up Python 3.10
       - name: 🐍 Set Up Python 3.10
@@ -51,16 +51,34 @@ jobs:
         run: |
           pytest tests/test_functions.py -v --tb=long
 
-      # Step 7: Commit and push generated output CSV files (FIXED VERSION)
+      # Step 7: Commit and push generated output CSV files (FINAL FIXED VERSION)
       - name: 💾 Commit Output Files to Repository
         run: |
+          # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # First, pull the latest changes with rebase
+          echo "🔄 Pulling latest changes from remote..."
           git pull --rebase origin main
+          
+          # Add output files
+          echo "📁 Adding output files..."
           git add output/
+          
+          # Check if there are changes to commit
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "✅ No changes to output files to commit."
           else
+            echo "📝 Committing changes..."
             git commit -m "CI: Auto-generated output CSV files [skip ci]"
-            git push origin main
+            
+            # Try to push, if it fails, pull again and retry
+            echo "🚀 Pushing changes to remote..."
+            git push origin main || (
+              echo "⚠️ Push failed, pulling latest changes and retrying..." && \
+              git pull --rebase origin main && \
+              git push origin main
+            )
+            echo "✅ Successfully pushed changes!"
           fi
