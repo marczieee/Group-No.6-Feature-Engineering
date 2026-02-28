@@ -1,8 +1,8 @@
 id,name,age,salary,department,join_date,score,category,join_year,join_month,join_quarter,join_day_of_week,years_in_company,is_recent_hire
-1,Alice,25,50000,HR,2021-03-15,88,A,2021,3,1,0,4.9,1
+1,Alice,25,50000,HR,2021-03-15,88,A,2021,3,1,0,5.0,1
 2,Bob,32,75000,IT,2019-07-22,45,B,2019,7,3,0,6.6,0
 3,Charlie,28,60000,Finance,2020-11-01,92,A,2020,11,4,6,5.3,0
-4,Diana,45,120000,IT,2015-05-30,10,C,2015,5,2,5,10.7,0
+4,Diana,45,120000,IT,2015-05-30,10,C,2015,5,2,5,10.8,0
 5,Eve,22,30000,HR,2023-01-10,77,B,2023,1,1,1,3.1,1
 6,Frank,38,95000,Finance,2017-08-19,55,A,2017,8,3,5,8.5,0
 7,Grace,29,62000,IT,2020-03-25,88,B,2020,3,1,2,5.9,0
