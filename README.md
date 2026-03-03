@@ -116,7 +116,7 @@ Detects statistical outliers and flags them in the dataset.
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/marczieee/group6-feature-engineering.git
+git clone https://github.com/YOUR_USERNAME/group6-feature-engineering.git
 cd group6-feature-engineering
 ```
 
