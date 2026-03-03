@@ -214,3 +214,6 @@ Your input CSV (`input/data.csv`) should contain these columns:
 | `join_date`  | date    | 2021-03-15     |
 | `score`      | integer | 88             |
 | `category`   | string  | A / B / C      |
+
+## 🧪 Testing - March 4, 2026
+Testing the consolidated CSV generation.
