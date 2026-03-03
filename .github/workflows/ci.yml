@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch all history for rebase
+          fetch-depth: 0
 
       # Step 2: Set up Python 3.10
       - name: 🐍 Set Up Python 3.10
@@ -51,34 +51,30 @@ jobs:
         run: |
           pytest tests/test_functions.py -v --tb=long
 
-      # Step 7: Commit and push generated output CSV files (FINAL FIXED VERSION)
+      # Step 7: Commit and push generated output CSV files (COMPLETELY FIXED VERSION)
       - name: 💾 Commit Output Files to Repository
         run: |
           # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # First, pull the latest changes with rebase
-          echo "🔄 Pulling latest changes from remote..."
-          git pull --rebase origin main
-          
-          # Add output files
+          # STEP 1: Add all output files first
           echo "📁 Adding output files..."
           git add output/
           
-          # Check if there are changes to commit
+          # STEP 2: Commit the changes (if any)
           if git diff --staged --quiet; then
-            echo "✅ No changes to output files to commit."
+            echo "✅ No changes to output files."
           else
             echo "📝 Committing changes..."
             git commit -m "CI: Auto-generated output CSV files [skip ci]"
             
-            # Try to push, if it fails, pull again and retry
+            # STEP 3: Now pull with rebase (wala nang unstaged changes)
+            echo "🔄 Pulling latest changes from remote..."
+            git pull --rebase origin main
+            
+            # STEP 4: Push the changes
             echo "🚀 Pushing changes to remote..."
-            git push origin main || (
-              echo "⚠️ Push failed, pulling latest changes and retrying..." && \
-              git pull --rebase origin main && \
-              git push origin main
-            )
+            git push origin main
             echo "✅ Successfully pushed changes!"
           fi
