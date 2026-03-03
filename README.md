@@ -11,7 +11,7 @@
 | Haro (Data Processing Lead)    | Implements the 5 CSV processing Python functions    |
 | Marc (DevOps Engineer)         | Configures the GitHub Actions CI pipeline           |
 | Akira (Tester)                  | Writes and validates PyTest test cases              |
-| (Documenter / Presenter)  | Prepares README and presentation slides             |
+| Renz (Documenter / Presenter)  | Prepares README and presentation slides             |
 
 ---
 
