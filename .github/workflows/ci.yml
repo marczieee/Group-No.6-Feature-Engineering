@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
 
-
+# Give the pipeline write permission to commit output files
 permissions:
   contents: write
 
@@ -15,36 +15,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository code
       - name: 📥 Checkout Repository
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      # Step 2: Set up Python 3.10
       - name: 🐍 Set Up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # Step 3: Install required Python packages
       - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pandas numpy pytest
 
+      # Step 4: Create required folders
       - name: 📁 Create Required Folders
         run: |
           mkdir -p input
           mkdir -p output
           mkdir -p tests
 
+      # Step 5: Run the full feature engineering pipeline
       - name: ⚙️ Run Feature Engineering Pipeline (main.py)
         run: |
           python main.py
 
+      # Step 6: Run all PyTest test cases
       - name: 🧪 Run PyTest Tests
         run: |
           pytest tests/test_functions.py -v --tb=long
 
+      # Step 7: Commit and push generated output CSV files
       - name: 💾 Commit Output Files to Repository
         run: |
           # Configure git
