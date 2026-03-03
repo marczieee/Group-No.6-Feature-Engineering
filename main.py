@@ -14,7 +14,6 @@ from bin_numeric_ranges           import bin_numeric_ranges
 from time_based_feature_extraction import time_based_feature_extraction
 from flag_anomalies_column        import flag_anomalies_column
 
-# ─── Configuration ────────────────────────────────────────────────────────────
 INPUT_FILE = "input/data.csv"
 
 OUTPUT_FILES = {
@@ -25,7 +24,7 @@ OUTPUT_FILES = {
     "flagged_anomalies"            : "output/flagged_anomalies.csv",
     "consolidated_all_features"    : "output/consolidated_all_features.csv",
 }
-# ──────────────────────────────────────────────────────────────────────────────
+
 
 
 def run_pipeline():
@@ -33,7 +32,6 @@ def run_pipeline():
     print("  Group 6 — Feature Engineering CSV Pipeline")
     print("=" * 55)
 
-    # Validate input file exists
     if not os.path.exists(INPUT_FILE):
         print(f"\n❌ ERROR: Input file '{INPUT_FILE}' not found!")
         print("   Please place your CSV file in the 'input/' folder.")
@@ -42,10 +40,8 @@ def run_pipeline():
     print(f"\n📂 Input  : {INPUT_FILE}")
     print(f"📁 Output : output/\n")
 
-    # Create output directory if it doesn't exist
     os.makedirs("output", exist_ok=True)
 
-    # Run all 5 feature engineering functions
     print("\n" + "-" * 55)
     print("📊 Running Function 1: Derive Computed Columns")
     derive_computed_columns(
@@ -90,14 +86,12 @@ def run_pipeline():
     print("  ✅ Pipeline complete! All output files saved.")
     print("=" * 55)
 
-    # Print summary of output files
     print("\n📄 Output files generated:")
     for name, path in OUTPUT_FILES.items():
         if name != "consolidated_all_features":
             size = os.path.getsize(path) if os.path.exists(path) else 0
             print(f"   • {path}  ({size} bytes)")
     
-    # Create consolidated CSV
     create_consolidated_csv()
 
 
@@ -109,7 +103,6 @@ def create_consolidated_csv():
     print("  🔄 Creating Consolidated CSV File")
     print("=" * 55)
     
-    # List of output files
     output_files = [
         'output/derived_computed_columns.csv',
         'output/encoded_categorical_features.csv',
@@ -118,7 +111,6 @@ def create_consolidated_csv():
         'output/flagged_anomalies.csv'
     ]
     
-    # I-verify na lahat ng files ay existing
     all_files_exist = True
     for file in output_files:
         if not os.path.exists(file):
@@ -130,7 +122,6 @@ def create_consolidated_csv():
         return
     
     try:
-        # Basahin ang bawat CSV file
         dfs = []
         file_names = []
         
@@ -140,21 +131,16 @@ def create_consolidated_csv():
             file_names.append(os.path.basename(file))
             print(f"✅ Nabasa ang {os.path.basename(file)} - {len(df.columns)} columns")
         
-        # Gamitin ang 'id' column para i-merge
         first_df = dfs[0]
         merge_col = 'id' if 'id' in first_df.columns else first_df.columns[0]
         print(f"📊 Ginagamit ang '{merge_col}' bilang key para pagsamahin")
         
-        # Listahan ng mga columns na dapat i-drop (original columns)
         columns_to_drop = ['name', 'age', 'salary', 'department', 'join_date', 'score', 'category']
         
-        # Magsimula sa unang dataframe (ito ang may original columns)
         consolidated = first_df.copy()
         print(f"📌 Base dataframe: {file_names[0]} - kept all {len(consolidated.columns)} columns")
         
-        # I-merge ang natitirang dataframes - pero i-drop ang duplicate columns
         for i, df in enumerate(dfs[1:], 2):
-            # I-drop ang merge column at ang mga original columns mula sa kasalukuyang dataframe
             cols_to_keep = []
             for col in df.columns:
                 if col == merge_col:
@@ -164,8 +150,8 @@ def create_consolidated_csv():
                 else:
                     print(f"  ⏩ Inalis ang duplicate column: '{col}' from {file_names[i-1]}")
             
-            # I-merge gamit ang selected columns lang
-            if len(cols_to_keep) > 1:  # May ibang columns aside from merge_col
+
+            if len(cols_to_keep) > 1:  
                 consolidated = pd.merge(
                     consolidated, 
                     df[cols_to_keep], 
@@ -176,22 +162,18 @@ def create_consolidated_csv():
             else:
                 print(f"  ⚠️ Walang bagong columns sa {file_names[i-1]}, skip merge")
         
-        # I-save ang consolidated file
         output_path = OUTPUT_FILES["consolidated_all_features"]
         consolidated.to_csv(output_path, index=False)
         
-        # I-display ang resulta
         print("\n" + "-" * 55)
         print(f"✅ CONSOLIDATED CSV GENERATED!")
         print(f"📁 Lokasyon: {output_path}")
         print(f"📊 Kabuuang columns: {len(consolidated.columns)}")
         print(f"📊 Kabuuang rows: {len(consolidated)}")
         
-        # Ipakita ang file size
         size = os.path.getsize(output_path)
         print(f"💾 File size: {size} bytes ({size/1024:.2f} KB)")
         
-        # Ipakita ang sample columns
         all_cols = list(consolidated.columns)
         print(f"\n📋 First 15 columns: {', '.join(all_cols[:15])}")
         
