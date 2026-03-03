@@ -215,5 +215,3 @@ Your input CSV (`input/data.csv`) should contain these columns:
 | `score`      | integer | 88             |
 | `category`   | string  | A / B / C      |
 
-## 🧪 Testing - March 4, 2026
-Testing the consolidated CSV generation.
