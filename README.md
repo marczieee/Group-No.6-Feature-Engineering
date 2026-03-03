@@ -6,6 +6,13 @@
 
 ## 👥 Group Members
 
+| Names:                  |
+|-------------------------|
+| Aganan, Akira Yuki      |
+| Bolina, Renz Andrae     |
+| Gelera, Marc Eldrian    |
+| Pacheco, Haroliyen      |
+
 | Role                    | Responsibility                                      |
 |-------------------------|-----------------------------------------------------|
 | Haro (Data Processing Lead)    | Implements the 5 CSV processing Python functions    |
