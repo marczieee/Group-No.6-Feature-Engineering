@@ -181,7 +181,7 @@ All 5 functions are tested using **PyTest**. Tests cover:
 - Binary flag columns only contain 0 or 1
 - No null values in critical columns
 - Row count is preserved (no data loss)
-- Business logic correctness (e.g., `is_senior` correct for age ≥ 40)
+- Business logic correctness (e.g., `is_senior` correct for age ≥ 60)
 
 Run tests with:
 ```bash
