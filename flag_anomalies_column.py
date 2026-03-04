@@ -1,71 +1,85 @@
 """
 Group 6 - Feature Engineering
 Function 5: flag_anomalies_column
-Detects and flags statistical outliers/anomalies in numeric columns.
+Detects statistical outliers and flags them in the dataset.
 """
 
 import pandas as pd
+import numpy as np
 import os
 
-def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
+def flag_anomalies(input_file: str, output_file: str) -> pd.DataFrame:
     """
-    Flags anomalies/outliers in numeric columns using IQR and Z-score methods.
-
-    Detection methods:
-    - salary_anomaly : IQR method (1.5x IQR rule) applied to 'salary'
-    - score_anomaly  : Z-score method (±2 standard deviations) applied to 'score'
-    - age_anomaly    : IQR method applied to 'age'
-    - is_anomaly     : 1 if ANY of the above flags are triggered, else 0
-
-    Args:
-        input_file  (str): Path to the input CSV file.
-        output_file (str): Path where the processed CSV will be saved.
-
-    Returns:
-        pd.DataFrame: The processed dataframe with anomaly flag columns.
-    """
+    Detects anomalies in numeric columns using IQR and Z-score methods.
     
+    New columns added:
+    - salary_anomaly: 1 if salary is outlier (IQR method)
+    - score_anomaly: 1 if score is outlier (Z-score method, |z| > 2)
+    - age_anomaly: 1 if age >= 60 (custom rule)
+    - is_anomaly: 1 if ANY of the above is 1
+    """
+
     df = pd.read_csv(input_file)
 
-   
-    Q1_sal = df['salary'].quantile(0.25)
-    Q3_sal = df['salary'].quantile(0.75)
-    IQR_sal = Q3_sal - Q1_sal
-    df['salary_anomaly'] = (
-        (df['salary'] < Q1_sal - 1.5 * IQR_sal) |
-        (df['salary'] > Q3_sal + 1.5 * IQR_sal)
-    ).astype(int)
+    df_copy = df.copy()
     
-    score_mean = df['score'].mean()
-    score_std  = df['score'].std()
-    df['score_anomaly'] = (
-        (df['score'] < score_mean - 2 * score_std) |
-        (df['score'] > score_mean + 2 * score_std)
-    ).astype(int)
-   
-    Q1_age = df['age'].quantile(0.25)
-    Q3_age = df['age'].quantile(0.75)
-    IQR_age = Q3_age - Q1_age
-    df['age_anomaly'] = (
-        (df['age'] < Q1_age - 1.5 * IQR_age) |
-        (df['age'] > Q3_age + 1.5 * IQR_age)
-    ).astype(int)
-   
-    df['is_anomaly'] = (
-        (df['salary_anomaly'] == 1) |
-        (df['score_anomaly']  == 1) |
-        (df['age_anomaly']    == 1)
-    ).astype(int)
 
+    Q1_salary = df_copy['salary'].quantile(0.25)
+    Q3_salary = df_copy['salary'].quantile(0.75)
+    IQR_salary = Q3_salary - Q1_salary
+    lower_bound_salary = Q1_salary - 1.5 * IQR_salary
+    upper_bound_salary = Q3_salary + 1.5 * IQR_salary
     
+    df_copy['salary_anomaly'] = ((df_copy['salary'] < lower_bound_salary) | 
+                                   (df_copy['salary'] > upper_bound_salary)).astype(int)
+    
+
+    mean_score = df_copy['score'].mean()
+    std_score = df_copy['score'].std()
+    
+    if std_score > 0:
+        z_scores = (df_copy['score'] - mean_score) / std_score
+        df_copy['score_anomaly'] = (np.abs(z_scores) > 2).astype(int)
+    else:
+        df_copy['score_anomaly'] = 0
+    
+
+    df_copy['age_anomaly'] = (df_copy['age'] >= 60).astype(int)
+    
+
+    df_copy['is_anomaly'] = ((df_copy['salary_anomaly'] == 1) | 
+                              (df_copy['score_anomaly'] == 1) | 
+                              (df_copy['age_anomaly'] == 1)).astype(int)
+    
+
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    df.to_csv(output_file, index=False)
-    print(f"[flag_anomalies_column] ✅ Saved to: {output_file}")
-    return df
+    df_copy.to_csv(output_file, index=False)
+    
 
+    print(f"[flag_anomalies_column] ✅ Saved to: {output_file}")
+    print(f"   📊 Anomalies detected: {df_copy['is_anomaly'].sum()} out of {len(df_copy)} rows")
+    print(f"      - Salary anomalies: {df_copy['salary_anomaly'].sum()}")
+    print(f"      - Score anomalies: {df_copy['score_anomaly'].sum()}")
+    print(f"      - Age anomalies (age >= 60): {df_copy['age_anomaly'].sum()}")
+    
+
+    anomalies = df_copy[df_copy['is_anomaly'] == 1]
+    if len(anomalies) > 0:
+        print(f"\n   🔍 Anomaly details:")
+        for idx, row in anomalies.iterrows():
+            reasons = []
+            if row['salary_anomaly'] == 1:
+                reasons.append(f"Salary={row['salary']}")
+            if row['score_anomaly'] == 1:
+                reasons.append(f"Score={row['score']}")
+            if row['age_anomaly'] == 1:
+                reasons.append(f"Age={row['age']} (>=60)")
+            print(f"      - {row['name']}: {', '.join(reasons)}")
+    
+    return df_copy
 
 if __name__ == "__main__":
-    flag_anomalies_column(
+    flag_anomalies(
         input_file="input/data.csv",
         output_file="output/flagged_anomalies.csv"
     )
