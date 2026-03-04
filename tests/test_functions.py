@@ -61,13 +61,33 @@ class TestDeriveComputedColumns:
     def test_is_senior_binary(self, df):
         assert set(df['is_senior'].unique()).issubset({0, 1})
 
-    def test_is_senior_correct_for_age_40_plus(self, df):
-        senior_rows = df[df['age'] >= 40]
-        assert (senior_rows['is_senior'] == 1).all()
+    # ===== FIXED TESTS FOR SENIOR (60+) =====
+    def test_is_senior_correct_for_age_60_plus(self, df):
+        """Test that age 60 and above are marked as senior (1)"""
+        # Check if there are any age 60+ in the data
+        senior_rows = df[df['age'] >= 60]
+        if len(senior_rows) > 0:
+            assert (senior_rows['is_senior'] == 1).all()
+        else:
+            # Skip test if no seniors in data
+            pytest.skip("No age 60+ records found in test data")
+
+    def test_is_senior_correct_for_age_40_to_59(self, df):
+        """Test that age 40-59 are NOT marked as senior (0)"""
+        middle_rows = df[(df['age'] >= 40) & (df['age'] < 60)]
+        if len(middle_rows) > 0:
+            assert (middle_rows['is_senior'] == 0).all()
+        else:
+            pytest.skip("No age 40-59 records found in test data")
 
     def test_is_senior_correct_for_under_40(self, df):
+        """Test that age under 40 are NOT marked as senior (0)"""
         junior_rows = df[df['age'] < 40]
-        assert (junior_rows['is_senior'] == 0).all()
+        if len(junior_rows) > 0:
+            assert (junior_rows['is_senior'] == 0).all()
+        else:
+            pytest.skip("No under-40 records found in test data")
+    # ===== END OF FIXED TESTS =====
 
     def test_salary_per_age_positive(self, df):
         assert (df['salary_per_age'] > 0).all()
