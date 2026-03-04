@@ -1,4 +1,4 @@
- ## 📊 Group 6 — 
+ ## 📊 Group 6 — Feature Engineering
 
  DEV OPS Midterm Activity | Automated CSV Data Processing using GitHub Actions CI Pipeline
 
