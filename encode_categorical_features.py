@@ -7,7 +7,6 @@ Encodes categorical/text columns into numeric representations.
 import pandas as pd
 import os
 
-
 def encode_categorical_features(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Encodes categorical features in a CSV file into numeric values.
@@ -29,15 +28,12 @@ def encode_categorical_features(input_file: str, output_file: str) -> pd.DataFra
     
     df = pd.get_dummies(df, columns=['department'], prefix='dept')
 
-  
     bool_cols = df.select_dtypes(include='bool').columns
     df[bool_cols] = df[bool_cols].astype(int)
 
-    
     category_map = {'A': 1, 'B': 2, 'C': 3}
     df['category_encoded'] = df['category'].map(category_map)
 
-    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[encode_categorical_features] ✅ Saved to: {output_file}")
