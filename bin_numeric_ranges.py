@@ -35,7 +35,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    # Bin salary into 
+     
     df['salary_range'] = pd.cut(
         df['salary'],
         bins=[0, 50000, 80000, 120000, float('inf')],
