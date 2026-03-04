@@ -59,7 +59,7 @@ def run_pipeline():
         print("   Please place your CSV file in the 'input/' folder.")
         sys.exit(1)
 
-    # Check if input has changed
+    
     input_changed = has_input_changed()
     if not input_changed:
         print("\n⚠️  Input file hasn't changed since last run.")
@@ -112,7 +112,7 @@ def run_pipeline():
     print("  ✅ Pipeline complete! All output files saved.")
     print("=" * 55)
 
-    # Save input hash for next run
+    
     save_input_hash()
 
     print("\n📄 Output files generated:")
@@ -152,7 +152,7 @@ def create_consolidated_csv():
         
         for file in output_files:
             df = pd.read_csv(file)
-            # Remove internal tracking columns for display
+            
             df = df.loc[:, ~df.columns.str.startswith('_')]
             dataframes.append(df)
             file_names.append(os.path.basename(file))
@@ -188,7 +188,7 @@ def create_consolidated_csv():
             else:
                 print(f"  ⚠️ No new columns in {file_names[i-1]}, skipping merge")
         
-        # Add generation timestamp
+        
         consolidated['_report_generated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         output_path = OUTPUT_FILES["consolidated_all_features"]
