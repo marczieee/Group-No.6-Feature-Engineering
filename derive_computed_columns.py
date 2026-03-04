@@ -16,10 +16,10 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     
     df = pd.read_csv(input_file)
 
-    # Create a hash   
+      
     input_hash = hashlib.md5(df.to_string().encode()).hexdigest()
     
-    # Derived columns
+    
     df['salary_per_age'] = (df['salary'] / df['age']).round(2)
     df['annual_bonus']   = (df['salary'] * 0.10).round(2)
     df['is_senior']      = (df['age'] >= 40).astype(int)
