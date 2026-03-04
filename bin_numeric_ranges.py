@@ -43,7 +43,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    # Bin score into performance grades
+    # Bin score into performance grade
     df['score_grade'] = pd.cut(
         df['score'],
         bins=[0, 49, 70, 85, 100],
