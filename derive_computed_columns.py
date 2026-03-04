@@ -28,7 +28,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     )
     df['score_rank'] = (df['score'] / 10).round(1)
     
-    # Add metadata
+    
     df['_input_hash'] = input_hash
     df['_generated_at'] = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
