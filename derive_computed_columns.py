@@ -26,12 +26,12 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with new columns.
     """
-    
+
     df = pd.read_csv(input_file)
 
     df['salary_per_age'] = (df['salary'] / df['age']).round(2)
     df['annual_bonus']   = (df['salary'] * 0.10).round(2)
-    df['is_senior']      = df['age'].apply(lambda x: 1 if x >= 40 else 0)
+    df['is_senior']      = df['age'].apply(lambda x: 1 if x >= 60 else 0)
     
     df['salary_level']   = df['salary'].apply(
         lambda x: 'High' if x > 90000 else ('Mid' if x > 55000 else 'Low')
@@ -40,7 +40,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
-    print(f"[derive_computed_columns] ✅ Saved to: {output_file}")
+    print(f"[derive_computed_columns] Saved to: {output_file}")
     return df
 
 
