@@ -16,7 +16,7 @@ from derive_computed_columns import derive_computed_columns
 from encode_categorical_features import encode_categorical_features
 from bin_numeric_ranges import bin_numeric_ranges
 from time_based_feature_extraction import time_based_feature_extraction
-from flag_anomalies_column import flag_anomalies
+from flag_anomalies_column import flag_anomalies_column as flag_anomalies
 
 # Fixture to provide test dataframe
 @pytest.fixture
