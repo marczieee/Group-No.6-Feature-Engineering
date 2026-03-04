@@ -44,26 +44,14 @@ jobs:
         run: |
           pytest tests/test_functions.py -v --tb=long
 
-      - name: 💾 Commit and Force Push Output Files
+      - name: 💾 Commit Output Files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Fetch the latest state of the remote main branch
-          git fetch origin main
-          
-          # Completely reset our local branch to match remote main, discarding any local state
-          git reset --hard origin/main
-          
-          # Add a unique timestamp to guarantee a change and force an update
-          echo "This file ensures an update. Generated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > output/.github_actions_trigger
-          
-          # Add all changes in the output folder
           git add output/
-          
-          # Commit the changes. If nothing changed, this will fail silently, which is fine.
-          git commit -m "CI: Auto-update output files - $(date -u +'%Y-%m-%d %H:%M:%S') [skip ci]" || echo "No changes to commit."
-          
-          # Force push the changes to the remote main branch.
-          # This overwrites the remote branch with our local state, which is safe because the output/ folder is generated.
-          git push --force origin main
+          git commit -m "temp: staging output files" || echo "No files to commit yet"
+          git pull --rebase origin main
+          echo "Last updated: $(date)" > output/.timestamp
+          git add output/.timestamp
+          git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+          git push origin main
