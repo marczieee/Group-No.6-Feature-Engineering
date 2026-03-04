@@ -24,10 +24,10 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with new bin columns.
     """
-    # Load 
+    
     df = pd.read_csv(input_file)
 
-    # Bin age 
+     
     df['age_group'] = pd.cut(
         df['age'],
         bins=[0, 25, 35, 45, 100],
