@@ -1,6 +1,6 @@
 id,name,age,salary,join_date,score,category,dept_Finance,dept_HR,dept_IT,category_encoded
 1,Alice,30,50000,2021-03-15,88,A,0,1,0,1
-2,Bob,32,75000,2019-07-22,45,B,0,0,1,2
+2,Bob,32,80000,2019-07-22,45,B,0,0,1,2
 3,Charlie,28,60000,2020-11-01,92,A,1,0,0,1
 4,Mac,45,120000,2015-05-30,10,C,0,0,1,3
 5,Mia,22,30000,2023-01-10,77,B,0,1,0,2
