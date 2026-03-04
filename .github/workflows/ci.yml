@@ -59,7 +59,7 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
             git push origin main
-            echo "✅ Changes committed and pushed!"
+            echo " Changes committed and pushed!"
           else
-            echo "ℹ️ No changes to output files"
+            echo " No changes to output files"
           fi
