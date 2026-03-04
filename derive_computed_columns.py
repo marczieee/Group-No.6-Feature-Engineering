@@ -32,7 +32,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     df['_input_hash'] = input_hash
     df['_generated_at'] = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Save output
+    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[derive_computed_columns] ✅ Saved to: {output_file}")
