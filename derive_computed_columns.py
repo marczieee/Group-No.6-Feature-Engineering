@@ -21,10 +21,8 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
 
     df = pd.read_csv(input_file)
 
-
     df['salary_per_age'] = (df['salary'] / df['age']).round(2)
     df['annual_bonus']   = (df['salary'] * 0.10).round(2)
-    
 
     df['is_senior']      = (df['age'] >= 60).astype(int)
     
