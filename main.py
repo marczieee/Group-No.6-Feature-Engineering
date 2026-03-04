@@ -152,8 +152,7 @@ def create_consolidated_csv():
         
         for file in output_files:
             df = pd.read_csv(file)
-            
-            df = df.loc[:, ~df.columns.str.startswith('_')]
+            # REMOVED: No need to filter internal columns anymore
             dataframes.append(df)
             file_names.append(os.path.basename(file))
             print(f"✅ Read {os.path.basename(file)} - {len(df.columns)} columns")
@@ -188,8 +187,7 @@ def create_consolidated_csv():
             else:
                 print(f"  ⚠️ No new columns in {file_names[i-1]}, skipping merge")
         
-        
-        consolidated['_report_generated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # REMOVED: '_report_generated' timestamp line
         
         output_path = OUTPUT_FILES["consolidated_all_features"]
         consolidated.to_csv(output_path, index=False)
@@ -207,7 +205,6 @@ def create_consolidated_csv():
         print(f"\n📋 First 15 columns: {', '.join(all_columns[:15])}")
         if len(all_columns) > 15:
             print(f"   ... and {len(all_columns) - 15} more columns")
-        print(f"\n🕒 Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
     except Exception as e:
         print(f"❌ Error creating consolidated CSV: {e}")
