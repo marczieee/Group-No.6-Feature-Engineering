@@ -27,7 +27,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
     # Load 
     df = pd.read_csv(input_file)
 
-    # Bin age into labeled groups
+    # Bin age 
     df['age_group'] = pd.cut(
         df['age'],
         bins=[0, 25, 35, 45, 100],
