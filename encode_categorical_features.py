@@ -25,7 +25,6 @@ def encode_categorical_features(input_file: str, output_file: str) -> pd.DataFra
     
     df = pd.read_csv(input_file)
 
-    
     df = pd.get_dummies(df, columns=['department'], prefix='dept')
 
     bool_cols = df.select_dtypes(include='bool').columns
