@@ -51,7 +51,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    #  output
+    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[bin_numeric_ranges] ✅ Saved to: {output_file}")
