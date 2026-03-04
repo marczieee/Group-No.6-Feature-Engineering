@@ -16,7 +16,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     
     df = pd.read_csv(input_file)
 
-    # Create a hash of the input data to  
+    # Create a hash   
     input_hash = hashlib.md5(df.to_string().encode()).hexdigest()
     
     # Derived columns
