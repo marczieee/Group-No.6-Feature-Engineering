@@ -10,6 +10,13 @@ import os
 def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Derives new computed columns from existing data in a CSV file.
+    
+    New columns added:
+    - salary_per_age     : salary divided by age (productivity ratio)
+    - annual_bonus       : 10% of salary as estimated bonus
+    - is_senior          : 1 if age >= 60, else 0
+    - salary_level       : 'High', 'Mid', or 'Low' based on salary range
+    - score_rank         : normalized score out of 10
     """
 
     df = pd.read_csv(input_file)
