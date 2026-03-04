@@ -48,21 +48,10 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Pull latest changes
-          git pull --rebase origin main
-          
-          # Add ALL output files
           git add output/
-          
-          # Force commit with timestamp
-          if git diff --staged --quiet; then
-            echo "No changes detected, but forcing update with timestamp..."
-            # Touch a file to force change
-            echo "Last updated: $(date)" > output/.last_update
-            git add output/.last_update
-          fi
-          
-          # Commit with timestamp
-          git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]" || echo "No changes to commit"
+          git commit -m "temp: staging output files" || echo "No files to commit yet"
+          git pull --rebase origin main
+          echo "Last updated: $(date)" > output/.timestamp
+          git add output/.timestamp
+          git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
           git push origin main
