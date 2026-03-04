@@ -23,21 +23,21 @@ def encode_categorical_features(input_file: str, output_file: str) -> pd.DataFra
     Returns:
         pd.DataFrame: The processed dataframe with encoded columns.
     """
-    # Load the CSV
+    
     df = pd.read_csv(input_file)
 
-    # One-hot encode 'department' column
+    
     df = pd.get_dummies(df, columns=['department'], prefix='dept')
 
-    # Convert boolean columns (True/False) to int (1/0)
+  
     bool_cols = df.select_dtypes(include='bool').columns
     df[bool_cols] = df[bool_cols].astype(int)
 
-    # Label encode 'category' column
+    
     category_map = {'A': 1, 'B': 2, 'C': 3}
     df['category_encoded'] = df['category'].map(category_map)
 
-    # Save output
+    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[encode_categorical_features] ✅ Saved to: {output_file}")

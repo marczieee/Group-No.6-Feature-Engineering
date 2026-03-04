@@ -25,10 +25,10 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with anomaly flag columns.
     """
-    # Load the CSV
+    
     df = pd.read_csv(input_file)
 
-    # --- Salary anomaly: IQR Method ---
+   
     Q1_sal = df['salary'].quantile(0.25)
     Q3_sal = df['salary'].quantile(0.75)
     IQR_sal = Q3_sal - Q1_sal
@@ -37,7 +37,7 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['salary'] > Q3_sal + 1.5 * IQR_sal)
     ).astype(int)
 
-    # --- Score anomaly: Z-score Method ---
+    
     score_mean = df['score'].mean()
     score_std  = df['score'].std()
     df['score_anomaly'] = (
@@ -45,7 +45,7 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['score'] > score_mean + 2 * score_std)
     ).astype(int)
 
-    # --- Age anomaly: IQR Method ---
+   
     Q1_age = df['age'].quantile(0.25)
     Q3_age = df['age'].quantile(0.75)
     IQR_age = Q3_age - Q1_age
@@ -54,14 +54,14 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['age'] > Q3_age + 1.5 * IQR_age)
     ).astype(int)
 
-    # --- Combined anomaly flag ---
+   
     df['is_anomaly'] = (
         (df['salary_anomaly'] == 1) |
         (df['score_anomaly']  == 1) |
         (df['age_anomaly']    == 1)
     ).astype(int)
 
-    # Save output
+    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[flag_anomalies_column] ✅ Saved to: {output_file}")

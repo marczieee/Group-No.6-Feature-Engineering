@@ -28,26 +28,26 @@ def time_based_feature_extraction(input_file: str, output_file: str) -> pd.DataF
     Returns:
         pd.DataFrame: The processed dataframe with new time-based columns.
     """
-    # Load the CSV
+    
     df = pd.read_csv(input_file)
 
-    # Parse the date column
+    
     df['join_date'] = pd.to_datetime(df['join_date'])
     today = pd.Timestamp(datetime.today().date())
 
-    # Extract time components
+   
     df['join_year']        = df['join_date'].dt.year
     df['join_month']       = df['join_date'].dt.month
     df['join_quarter']     = df['join_date'].dt.quarter
     df['join_day_of_week'] = df['join_date'].dt.dayofweek  # 0 = Monday
 
-    # Calculate tenure
+    
     df['years_in_company'] = ((today - df['join_date']).dt.days / 365).round(1)
 
-    # Flag recent hires (2021 onward)
+   
     df['is_recent_hire'] = df['join_year'].apply(lambda y: 1 if y >= 2021 else 0)
 
-    # Save output
+    
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[time_based_feature_extraction] ✅ Saved to: {output_file}")
