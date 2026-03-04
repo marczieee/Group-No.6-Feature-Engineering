@@ -9,7 +9,7 @@ import os
 import numpy as np
 import sys
 
-
+# FIX: Add parent directory to path so imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from derive_computed_columns import derive_computed_columns
@@ -79,7 +79,6 @@ class TestDeriveComputedColumns:
         result = derive_computed_columns(df, "output/test_derived.csv")
         assert result['is_senior'].isin([0, 1]).all()
     
-    # UPDATED TEST FOR 60+ SENIOR
     def test_is_senior_correct_for_age_60_plus(self, df):
         """Test that age 60 and above are marked as senior (1)"""
         # Add a person aged 60+ for testing
@@ -100,7 +99,6 @@ class TestDeriveComputedColumns:
         senior_rows = result[result['age'] >= 60]
         assert (senior_rows['is_senior'] == 1).all()
     
-    # NEW TEST FOR AGES 40-59 (should be 0)
     def test_is_senior_correct_for_age_40_to_59(self, df):
         """Test that age 40-59 are NOT marked as senior (0)"""
         result = derive_computed_columns(df, "output/test_derived.csv")
@@ -108,7 +106,6 @@ class TestDeriveComputedColumns:
         if len(middle_rows) > 0:
             assert (middle_rows['is_senior'] == 0).all()
     
-    # UPDATED TEST FOR UNDER 40 (should be 0)
     def test_is_senior_correct_for_under_40(self, df):
         """Test that age under 40 are NOT marked as senior (0)"""
         result = derive_computed_columns(df, "output/test_derived.csv")
