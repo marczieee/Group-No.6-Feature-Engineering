@@ -14,16 +14,15 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
     
     New columns added:
     - salary_anomaly: 1 if salary is outlier (IQR method)
-    - score_anomaly: 1 if score is outlier (Z-score method, |z| > 2)
+    - score_anomaly: 1 if score is outlier (Z-score method, |z| > 2 OR score < 20 OR score > 95)
     - age_anomaly: 1 if age >= 60 (custom rule)
     - is_anomaly: 1 if ANY of the above is 1
     """
 
     df = pd.read_csv(input_file)
-
     df_copy = df.copy()
     
-
+    # --- SALARY ANOMALY (IQR method) ---
     Q1_salary = df_copy['salary'].quantile(0.25)
     Q3_salary = df_copy['salary'].quantile(0.75)
     IQR_salary = Q3_salary - Q1_salary
@@ -33,36 +32,45 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
     df_copy['salary_anomaly'] = ((df_copy['salary'] < lower_bound_salary) | 
                                    (df_copy['salary'] > upper_bound_salary)).astype(int)
     
-
+    # --- SCORE ANOMALY (Z-score + fixed threshold) - FIXED VERSION ---
     mean_score = df_copy['score'].mean()
     std_score = df_copy['score'].std()
     
     if std_score > 0:
         z_scores = (df_copy['score'] - mean_score) / std_score
-        df_copy['score_anomaly'] = (np.abs(z_scores) > 2).astype(int)
+        # Combined condition: Z-score > 2 OR score < 20 OR score > 95
+        df_copy['score_anomaly'] = (
+            (np.abs(z_scores) > 2) | 
+            (df_copy['score'] < 20) | 
+            (df_copy['score'] > 95)
+        ).astype(int)
     else:
-        df_copy['score_anomaly'] = 0
+        # If all scores are the same, use fixed threshold only
+        df_copy['score_anomaly'] = (
+            (df_copy['score'] < 20) | 
+            (df_copy['score'] > 95)
+        ).astype(int)
     
-
+    # --- AGE ANOMALY (custom rule: age >= 60) ---
     df_copy['age_anomaly'] = (df_copy['age'] >= 60).astype(int)
     
-
+    # --- IS_ANOMALY (union of all flags) ---
     df_copy['is_anomaly'] = ((df_copy['salary_anomaly'] == 1) | 
                               (df_copy['score_anomaly'] == 1) | 
                               (df_copy['age_anomaly'] == 1)).astype(int)
     
-
+    # Save output
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df_copy.to_csv(output_file, index=False)
     
-
+    # Print summary
     print(f"[flag_anomalies_column] ✅ Saved to: {output_file}")
     print(f"   📊 Anomalies detected: {df_copy['is_anomaly'].sum()} out of {len(df_copy)} rows")
     print(f"      - Salary anomalies: {df_copy['salary_anomaly'].sum()}")
     print(f"      - Score anomalies: {df_copy['score_anomaly'].sum()}")
     print(f"      - Age anomalies (age >= 60): {df_copy['age_anomaly'].sum()}")
     
-
+    # Show details
     anomalies = df_copy[df_copy['is_anomaly'] == 1]
     if len(anomalies) > 0:
         print(f"\n   🔍 Anomaly details:")
