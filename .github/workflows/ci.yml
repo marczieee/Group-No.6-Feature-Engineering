@@ -49,17 +49,20 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Pull latest changes
-          git pull --rebase origin main
-          
-          # Add output files
-          git add output/
-          
-          # Check if may changes
-          if ! git diff --staged --quiet; then
-            git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
-            git push origin main
-            echo " Changes committed and pushed!"
+          if [[ -n $(git status -s) ]]; then
+            git add output/
+            git commit -m "temp: staging output files [skip ci]" || echo "No changes to commit"
+            git pull --rebase origin main
+            git add output/
+            if ! git diff --staged --quiet; then
+              git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+              git push origin main
+            fi
           else
-            echo " No changes to output files"
+            git pull --rebase origin main
+            git add output/
+            if ! git diff --staged --quiet; then
+              git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+              git push origin main
+            fi
           fi
