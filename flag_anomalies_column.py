@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import os
 
-def flag_anomalies(input_file: str, output_file: str) -> pd.DataFrame:
+def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Detects anomalies in numeric columns using IQR and Z-score methods.
     
@@ -79,7 +79,7 @@ def flag_anomalies(input_file: str, output_file: str) -> pd.DataFrame:
     return df_copy
 
 if __name__ == "__main__":
-    flag_anomalies(
+    flag_anomalies_column(
         input_file="input/data.csv",
         output_file="output/flagged_anomalies.csv"
     )
