@@ -16,7 +16,11 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     
     df = pd.read_csv(input_file)
 
+<<<<<<< Updated upstream
       
+=======
+     
+>>>>>>> Stashed changes
     input_hash = hashlib.md5(df.to_string().encode()).hexdigest()
     
     
