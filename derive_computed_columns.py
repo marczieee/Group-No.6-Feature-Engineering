@@ -15,7 +15,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     New columns added:
     - salary_per_age     : salary divided by age (productivity ratio)
     - annual_bonus       : 10% of salary as estimated bonus
-    - is_senior          : 1 if age >= 40, else 0
+    - is_senior          : 1 if age >= 60, else 0
     - salary_level       : 'High', 'Mid', or 'Low' based on salary range
     - score_rank         : normalized score out of 10
 
@@ -32,7 +32,7 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     # Derived columns
     df['salary_per_age'] = (df['salary'] / df['age']).round(2)
     df['annual_bonus']   = (df['salary'] * 0.10).round(2)
-    df['is_senior']      = df['age'].apply(lambda x: 1 if x >= 40 else 0)
+    df['is_senior']      = df['age'].apply(lambda x: 1 if x >= 60 else 0)
     df['salary_level']   = df['salary'].apply(
         lambda x: 'High' if x > 90000 else ('Mid' if x > 55000 else 'Low')
     )
