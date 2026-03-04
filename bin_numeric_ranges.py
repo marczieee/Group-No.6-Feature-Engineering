@@ -50,7 +50,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         labels=['Fail', 'Pass', 'Good', 'Excellent'],
         right=True
     )
-
+#k
     
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
