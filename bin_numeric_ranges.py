@@ -24,7 +24,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with new bin columns.
     """
-    # Load the CSV
+    # Load 
     df = pd.read_csv(input_file)
 
     # Bin age into labeled groups
