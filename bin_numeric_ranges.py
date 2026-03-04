@@ -35,7 +35,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    # Bin salary into pay grade ranges
+    # Bin salary into 
     df['salary_range'] = pd.cut(
         df['salary'],
         bins=[0, 50000, 80000, 120000, float('inf')],
@@ -43,7 +43,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    # Bin score into performance grade
+    # Bin score into 
     df['score_grade'] = pd.cut(
         df['score'],
         bins=[0, 49, 70, 85, 100],
@@ -51,7 +51,7 @@ def bin_numeric_ranges(input_file: str, output_file: str) -> pd.DataFrame:
         right=True
     )
 
-    # Save output
+    #  output
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[bin_numeric_ranges] ✅ Saved to: {output_file}")
