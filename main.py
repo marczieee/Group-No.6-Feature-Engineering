@@ -1,6 +1,9 @@
 import os
 import sys
 import pandas as pd
+import hashlib
+import json
+from datetime import datetime
 
 from derive_computed_columns      import derive_computed_columns
 from encode_categorical_features  import encode_categorical_features
@@ -9,6 +12,7 @@ from time_based_feature_extraction import time_based_feature_extraction
 from flag_anomalies_column        import flag_anomalies_column
 
 INPUT_FILE = "input/data.csv"
+HASH_FILE = "input/.data_hash.json"
 
 OUTPUT_FILES = {
     "derived_computed_columns"     : "output/derived_computed_columns.csv",
@@ -19,66 +23,99 @@ OUTPUT_FILES = {
     "consolidated_all_features"    : "output/consolidated_all_features.csv",
 }
 
+def get_input_hash():
+    """Calculate hash of input file to detect changes"""
+    if not os.path.exists(INPUT_FILE):
+        return None
+    df = pd.read_csv(INPUT_FILE)
+    return hashlib.md5(df.to_string().encode()).hexdigest()
+
+def has_input_changed():
+    """Check if input file has changed since last run"""
+    current_hash = get_input_hash()
+    if not current_hash:
+        return True
+    
+    if os.path.exists(HASH_FILE):
+        with open(HASH_FILE, 'r') as f:
+            stored_hash = json.load(f).get('hash')
+        return current_hash != stored_hash
+    return True
+
+def save_input_hash():
+    """Save current input hash for next run"""
+    current_hash = get_input_hash()
+    if current_hash:
+        with open(HASH_FILE, 'w') as f:
+            json.dump({'hash': current_hash, 'timestamp': datetime.now().isoformat()}, f)
+
 def run_pipeline():
     print("=" * 55)
     print("  Group 6 — Feature Engineering CSV Pipeline")
     print("=" * 55)
 
     if not os.path.exists(INPUT_FILE):
-        print(f"\n ERROR: Input file '{INPUT_FILE}' not found!")
+        print(f"\n❌ ERROR: Input file '{INPUT_FILE}' not found!")
         print("   Please place your CSV file in the 'input/' folder.")
         sys.exit(1)
 
-    print(f"\ Input  : {INPUT_FILE}")
-    print(f" Output : output/\n")
+    # Check if input has changed
+    input_changed = has_input_changed()
+    if not input_changed:
+        print("\n⚠️  Input file hasn't changed since last run.")
+        response = input("Do you still want to process? (y/n): ")
+        if response.lower() != 'y':
+            print("❌ Pipeline cancelled.")
+            return
+
+    print(f"\n📂 Input  : {INPUT_FILE}")
+    print(f"📁 Output : output/\n")
 
     os.makedirs("output", exist_ok=True)
 
     print("\n" + "-" * 55)
-    print(" Running Function 1: Derive Computed Columns")
+    print("📊 Running Function 1: Derive Computed Columns")
     derive_computed_columns(
         INPUT_FILE,
         OUTPUT_FILES["derived_computed_columns"]
     )
-    print("[derive_computed_columns] Saved to: output/derived_computed_columns.csv")
 
     print("\n" + "-" * 55)
-    print(" Running Function 2: Encode Categorical Features")
+    print("📊 Running Function 2: Encode Categorical Features")
     encode_categorical_features(
         INPUT_FILE,
         OUTPUT_FILES["encoded_categorical_features"]
     )
-    print("[encode_categorical_features] Saved to: output/encoded_categorical_features.csv")
 
     print("\n" + "-" * 55)
-    print(" Running Function 3: Bin Numeric Ranges")
+    print("📊 Running Function 3: Bin Numeric Ranges")
     bin_numeric_ranges(
         INPUT_FILE,
         OUTPUT_FILES["binned_numeric_ranges"]
     )
-    print("[bin_numeric_ranges] Saved to: output/binned_numeric_ranges.csv")
 
     print("\n" + "-" * 55)
-    print(" Running Function 4: Time-Based Feature Extraction")
+    print("📊 Running Function 4: Time-Based Feature Extraction")
     time_based_feature_extraction(
         INPUT_FILE,
         OUTPUT_FILES["time_based_features"]
     )
-    print("[time_based_feature_extraction] Saved to: output/time_based_features.csv")
 
     print("\n" + "-" * 55)
-    print("Running Function 5: Flag Anomalies Column")
+    print("📊 Running Function 5: Flag Anomalies Column")
     flag_anomalies_column(
         INPUT_FILE,
         OUTPUT_FILES["flagged_anomalies"]
     )
-    print("[flag_anomalies_column] Saved to: output/flagged_anomalies.csv")
 
     print("\n" + "=" * 55)
-    print(" Pipeline complete! All output files saved.")
+    print("  ✅ Pipeline complete! All output files saved.")
     print("=" * 55)
 
-    print("\nOutput files generated:")
+    # Save input hash for next run
+    save_input_hash()
+
+    print("\n📄 Output files generated:")
     for name, path in OUTPUT_FILES.items():
         if name != "consolidated_all_features":
             size = os.path.getsize(path) if os.path.exists(path) else 0
@@ -88,7 +125,7 @@ def run_pipeline():
 
 def create_consolidated_csv():
     print("\n" + "=" * 55)
-    print("Creating Consolidated CSV File")
+    print("  🔄 Creating Consolidated CSV File")
     print("=" * 55)
     
     output_files = [
@@ -102,11 +139,11 @@ def create_consolidated_csv():
     all_files_exist = True
     for file in output_files:
         if not os.path.exists(file):
-            print(f" Cannot find {file}")
+            print(f"❌ Cannot find {file}")
             all_files_exist = False
     
     if not all_files_exist:
-        print("Cannot create consolidated file - missing output files")
+        print("❌ Cannot create consolidated file - missing output files")
         return
     
     try:
@@ -115,18 +152,20 @@ def create_consolidated_csv():
         
         for file in output_files:
             df = pd.read_csv(file)
+            # Remove internal tracking columns for display
+            df = df.loc[:, ~df.columns.str.startswith('_')]
             dataframes.append(df)
             file_names.append(os.path.basename(file))
-            print(f"Read {os.path.basename(file)} - {len(df.columns)} columns")
+            print(f"✅ Read {os.path.basename(file)} - {len(df.columns)} columns")
         
         first_df = dataframes[0]
         merge_key = 'id' if 'id' in first_df.columns else first_df.columns[0]
-        print(f"Using '{merge_key}' as merge key")
+        print(f"📊 Using '{merge_key}' as merge key")
         
         columns_to_drop = ['name', 'age', 'salary', 'department', 'join_date', 'score', 'category']
         
         consolidated = first_df.copy()
-        print(f"Base dataframe: {file_names[0]} - kept all {len(consolidated.columns)} columns")
+        print(f"📌 Base dataframe: {file_names[0]} - kept all {len(consolidated.columns)} columns")
         
         for i, df in enumerate(dataframes[1:], 2):
             columns_to_keep = []
@@ -147,27 +186,31 @@ def create_consolidated_csv():
                 )
                 print(f"  ✓ Merged {file_names[i-1]} - added {len(columns_to_keep)-1} new columns")
             else:
-                print(f"No new columns in {file_names[i-1]}, skipping merge")
+                print(f"  ⚠️ No new columns in {file_names[i-1]}, skipping merge")
+        
+        # Add generation timestamp
+        consolidated['_report_generated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         output_path = OUTPUT_FILES["consolidated_all_features"]
         consolidated.to_csv(output_path, index=False)
         
         print("\n" + "-" * 55)
-        print(f"CONSOLIDATED CSV GENERATED SUCCESSFULLY!")
-        print(f"Location: {output_path}")
-        print(f"Total columns: {len(consolidated.columns)}")
-        print(f"Total rows: {len(consolidated)}")
+        print(f"✅ CONSOLIDATED CSV GENERATED SUCCESSFULLY!")
+        print(f"📁 Location: {output_path}")
+        print(f"📊 Total columns: {len(consolidated.columns)}")
+        print(f"📊 Total rows: {len(consolidated)}")
         
         file_size = os.path.getsize(output_path)
-        print(f" File size: {file_size} bytes ({file_size/1024:.2f} KB)")
+        print(f"💾 File size: {file_size} bytes ({file_size/1024:.2f} KB)")
         
         all_columns = list(consolidated.columns)
-        print(f"\nFirst 15 columns: {', '.join(all_columns[:15])}")
+        print(f"\n📋 First 15 columns: {', '.join(all_columns[:15])}")
         if len(all_columns) > 15:
             print(f"   ... and {len(all_columns) - 15} more columns")
+        print(f"\n🕒 Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
     except Exception as e:
-        print(f"Error creating consolidated CSV: {e}")
+        print(f"❌ Error creating consolidated CSV: {e}")
         import traceback
         traceback.print_exc()
 

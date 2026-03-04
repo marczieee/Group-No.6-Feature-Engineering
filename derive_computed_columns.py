@@ -6,40 +6,33 @@ Adds new computed/derived columns from existing numeric data.
 
 import pandas as pd
 import os
+import hashlib
 
 
 def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Derives new computed columns from existing data in a CSV file.
-
-    New columns added:
-    - salary_per_age     : salary divided by age (productivity ratio)
-    - annual_bonus       : 10% of salary as estimated bonus
-    - is_senior          : 1 if age >= 40, else 0
-    - salary_level       : 'High', 'Mid', or 'Low' based on salary range
-    - score_rank         : normalized score out of 10
-
-    Args:
-        input_file  (str): Path to the input CSV file.
-        output_file (str): Path where the processed CSV will be saved.
-
-    Returns:
-        pd.DataFrame: The processed dataframe with new columns.
     """
-
+    # Load the CSV
     df = pd.read_csv(input_file)
 
-
+    # Create a hash of the input data to detect changes
+    input_hash = hashlib.md5(df.to_string().encode()).hexdigest()
+    
+    # Derived columns
     df['salary_per_age'] = (df['salary'] / df['age']).round(2)
     df['annual_bonus']   = (df['salary'] * 0.10).round(2)
-    
-    df['is_senior'] = (df['age'] >= 40).astype(int) 
-    
+    df['is_senior']      = (df['age'] >= 40).astype(int)
     df['salary_level']   = df['salary'].apply(
         lambda x: 'High' if x > 90000 else ('Mid' if x > 55000 else 'Low')
     )
     df['score_rank'] = (df['score'] / 10).round(1)
+    
+    # Add metadata
+    df['_input_hash'] = input_hash
+    df['_generated_at'] = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
+    # Save output
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df.to_csv(output_file, index=False)
     print(f"[derive_computed_columns] ✅ Saved to: {output_file}")
