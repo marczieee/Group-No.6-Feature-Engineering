@@ -7,7 +7,6 @@ Detects and flags statistical outliers/anomalies in numeric columns.
 import pandas as pd
 import os
 
-
 def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Flags anomalies/outliers in numeric columns using IQR and Z-score methods.
@@ -36,7 +35,6 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['salary'] < Q1_sal - 1.5 * IQR_sal) |
         (df['salary'] > Q3_sal + 1.5 * IQR_sal)
     ).astype(int)
-
     
     score_mean = df['score'].mean()
     score_std  = df['score'].std()
@@ -44,7 +42,6 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['score'] < score_mean - 2 * score_std) |
         (df['score'] > score_mean + 2 * score_std)
     ).astype(int)
-
    
     Q1_age = df['age'].quantile(0.25)
     Q3_age = df['age'].quantile(0.75)
@@ -53,7 +50,6 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
         (df['age'] < Q1_age - 1.5 * IQR_age) |
         (df['age'] > Q3_age + 1.5 * IQR_age)
     ).astype(int)
-
    
     df['is_anomaly'] = (
         (df['salary_anomaly'] == 1) |
