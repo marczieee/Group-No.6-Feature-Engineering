@@ -44,21 +44,14 @@ jobs:
         run: |
           pytest tests/test_functions.py -v --tb=long
 
-      - name: 💾 Output Files
+      - name: 💾 Commit Output Files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Get the absolute latest state of the remote main branch
-          git fetch origin main
-          git reset --hard origin/main
-          
-          # Create an undeniable change to force a commit
-          echo "Bot run timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > output/.bot_trigger
-          
-          # Add and commit the entire output folder
           git add output/
-          git commit -m "CI: Auto-generated output files - $(date -u +'%Y-%m-%d %H:%M:%S') [skip ci]" || echo "No changes to commit."
-          
-          # Force push to main. This is safe because the output folder is fully auto-generated.
-          git push --force origin main
+          git commit -m "temp: staging output files" || echo "No files to commit yet"
+          git pull --rebase origin main
+          echo "Last updated: $(date)" > output/.timestamp
+          git add output/.timestamp
+          git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+          git push origin main
