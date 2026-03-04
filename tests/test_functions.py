@@ -7,6 +7,10 @@ import pytest
 import pandas as pd
 import os
 import numpy as np
+import sys
+
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from derive_computed_columns import derive_computed_columns
 from encode_categorical_features import encode_categorical_features
