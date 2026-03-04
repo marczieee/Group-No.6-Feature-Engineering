@@ -13,10 +13,10 @@ def derive_computed_columns(input_file: str, output_file: str) -> pd.DataFrame:
     """
     Derives new computed columns from existing data in a CSV file.
     """
-    # Load the CSV
+    
     df = pd.read_csv(input_file)
 
-    # Create a hash of the input data to detect change
+    # Create a hash of the input data to detect 
     input_hash = hashlib.md5(df.to_string().encode()).hexdigest()
     
     # Derived columns
