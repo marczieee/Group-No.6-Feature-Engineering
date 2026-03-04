@@ -66,7 +66,7 @@ Adds new computed columns derived from existing numeric data.
 |------------------|------------------------------------------|
 | `salary_per_age` | Salary divided by age (efficiency ratio) |
 | `annual_bonus`   | 10% of salary as estimated bonus         |
-| `is_senior`      | 1 if age ≥ 40, else 0                    |
+| `is_senior`      | 1 if age ≥ 60, else 0                    |
 | `salary_level`   | High / Mid / Low based on salary range   |
 | `score_rank`     | Score normalized out of 10               |
 
