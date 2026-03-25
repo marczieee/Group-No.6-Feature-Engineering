@@ -1,49 +1,40 @@
 {
-  "file_name": "data.csv",
+  "file_name": "sample_data.csv",
   "shape": [
-    10,
-    8
+    34020,
+    6
   ],
   "columns": [
-    "id",
-    "name",
-    "age",
-    "salary",
-    "department",
-    "join_date",
-    "score",
-    "category"
+    "CountryCode",
+    "subset",
+    "question_code",
+    "question_label",
+    "answer",
+    "percentage"
   ],
   "dtypes": {
-    "id": "int64",
-    "name": "object",
-    "age": "int64",
-    "salary": "int64",
-    "department": "object",
-    "join_date": "object",
-    "score": "int64",
-    "category": "object"
+    "CountryCode": "object",
+    "subset": "object",
+    "question_code": "object",
+    "question_label": "object",
+    "answer": "object",
+    "percentage": "object"
   },
   "null_counts": {
-    "id": 0,
-    "name": 0,
-    "age": 0,
-    "salary": 0,
-    "department": 0,
-    "join_date": 0,
-    "score": 0,
-    "category": 0
+    "CountryCode": 0,
+    "subset": 0,
+    "question_code": 0,
+    "question_label": 0,
+    "answer": 1595,
+    "percentage": 0
   },
-  "numeric_columns": [
-    "id",
-    "age",
-    "salary",
-    "score"
-  ],
+  "numeric_columns": [],
   "categorical_columns": [
-    "name",
-    "department",
-    "join_date",
-    "category"
+    "CountryCode",
+    "subset",
+    "question_code",
+    "question_label",
+    "answer",
+    "percentage"
   ]
 }

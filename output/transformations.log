@@ -1,11 +1,7 @@
-Created binned feature for id
-Created normalized feature for id
-Created binned feature for age
-Created normalized feature for age
-Created binned feature for salary
-Created normalized feature for salary
-One-hot encoded name
-One-hot encoded department
-One-hot encoded join_date
-One-hot encoded category
+Filled 1595 missing values in answer with 'Unknown'
+Label encoded CountryCode
+One-hot encoded subset
+Label encoded question_code
+Label encoded question_label
+Label encoded answer
 Added record IDs

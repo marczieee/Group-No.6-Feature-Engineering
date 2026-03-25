@@ -1,0 +1,20 @@
+[2026-03-25 06:30:28] INFO: Loading data from: input/sample_data.csv
+[2026-03-25 06:30:28] INFO: ✅ Loaded CSV with utf-8 encoding
+[2026-03-25 06:30:28] INFO: ✅ Loaded 34020 records
+[2026-03-25 06:30:28] INFO: ✅ Original data saved to output/original_data.csv
+[2026-03-25 06:30:28] INFO: ============================================================
+[2026-03-25 06:30:28] INFO: 📊 DATA ANALYSIS
+[2026-03-25 06:30:28] INFO: ============================================================
+[2026-03-25 06:30:28] INFO: File: sample_data.csv
+[2026-03-25 06:30:28] INFO: Shape: 34020 rows × 6 columns
+[2026-03-25 06:30:28] INFO: Columns: ['CountryCode', 'subset', 'question_code', 'question_label', 'answer', 'percentage']
+[2026-03-25 06:30:28] INFO: ✅ Analysis saved
+[2026-03-25 06:30:28] INFO: ============================================================
+[2026-03-25 06:30:28] INFO: 🔧 FEATURE ENGINEERING
+[2026-03-25 06:30:28] INFO: ============================================================
+[2026-03-25 06:30:28] INFO: Handling missing values...
+[2026-03-25 06:30:28] INFO: ✅ Handled missing values
+[2026-03-25 06:30:28] INFO: Processing categorical features...
+[2026-03-25 06:30:28] INFO: ✅ Saved transformations log
+[2026-03-25 06:30:28] INFO: ✅ Performed 7 transformations
+[2026-03-25 06:30:28] INFO: ✅ Processed data saved to output/processed_data_20260325_063028.csv

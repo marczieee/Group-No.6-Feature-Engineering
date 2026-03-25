@@ -1,14 +1,14 @@
 {
-  "timestamp": "2026-03-25T04:39:59.677648",
-  "input_file": "input/data.csv",
+  "timestamp": "2026-03-25T06:30:28.959911",
+  "input_file": "input/sample_data.csv",
   "original_shape": [
-    10,
-    8
+    34020,
+    6
   ],
   "processed_shape": [
-    10,
-    37
+    34020,
+    15
   ],
-  "features_created": 29,
-  "transformations": []
+  "features_created": 9,
+  "success": true
 }
