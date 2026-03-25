@@ -10,14 +10,13 @@ on:
     inputs:
       force_process:
         description: 'Force process even if files unchanged'
-        required: false
+        required: false,
         type: boolean
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
-  actions: read  # Added for better artifact handling
 
 jobs:
   feature-engineering:
@@ -47,9 +46,6 @@ jobs:
         echo ""
         echo "📂 Input directory contents:"
         ls -la input/ 2>/dev/null || echo "No input directory"
-        echo ""
-        echo "📂 Output directory (before run):"
-        ls -la output/ 2>/dev/null || echo "No output directory yet"
     
     - name: Determine input file
       id: input-file
@@ -57,7 +53,7 @@ jobs:
         # Look for CSV files
         if [ -d "input" ] && [ -n "$(ls -A input/*.csv 2>/dev/null)" ]; then
           INPUT_FILE=$(ls input/*.csv | head -1)
-          echo "Found CSV file in input/: $INPUT_FILE"
+          echo "Found CSV file: $INPUT_FILE"
         else
           # Look anywhere in repo
           CSV_FILES=$(find . -name "*.csv" -type f -not -path "./.git/*" -not -path "./output/*" | head -1)
@@ -72,10 +68,6 @@ jobs:
         
         echo "input_file=$INPUT_FILE" >> $GITHUB_OUTPUT
         echo "INPUT_FILE_PATH=$INPUT_FILE" >> $GITHUB_ENV
-        
-        # Also get the filename without path for reference
-        INPUT_FILENAME=$(basename "$INPUT_FILE")
-        echo "input_filename=$INPUT_FILENAME" >> $GITHUB_OUTPUT
     
     - name: Run feature engineering (CI)
       id: run-pipeline
@@ -89,10 +81,6 @@ jobs:
         fi
         
         echo "🚀 Starting CI pipeline..."
-        echo "Input file: ${{ steps.input-file.outputs.input_file }}"
-        
-        # Create output directory if it doesn't exist
-        mkdir -p output
         
         # Run with force flag if requested
         if [ "${{ github.event.inputs.force_process }}" == "true" ]; then
@@ -101,121 +89,17 @@ jobs:
           python main.py "${{ steps.input-file.outputs.input_file }}"
         fi
         
-        # Check if output files were generated
-        echo "📊 Generated output files:"
-        if [ -d "output" ]; then
-          find output -type f -name "*.csv" -o -name "*.pkl" -o -name "*.json" -o -name "*sample_data*" | sed 's/^/- /'
-          OUTPUT_COUNT=$(find output -type f | wc -l)
-          echo "Total output files: $OUTPUT_COUNT"
-          
-          if [ $OUTPUT_COUNT -eq 0 ]; then
-            echo "⚠️ Warning: No output files were generated!"
-          fi
-        else
-          echo "⚠️ Warning: output directory not created!"
-        fi
-        
         echo "✅ CI pipeline completed"
       continue-on-error: true
     
-    - name: Upload feature engineering outputs (CD)
-      if: always()  # Upload even if pipeline fails, to see partial outputs
-      uses: actions/upload-artifact@v4
-      with:
-        name: feature-engineered-data
-        path: |
-          output/
-          **/*sample_data*
-          **/*.csv
-          **/*.pkl
-          **/*.json
-          **/*.parquet
-        if-no-files-found: warn
-        retention-days: 7
-    
-    - name: Create job summary with results
-      if: always()  # Always create summary, even on failure
-      run: |
-        echo "# 📊 Feature Engineering Pipeline Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## 🏃 Run Information" >> $GITHUB_STEP_SUMMARY
-        echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Input File:** \`${{ steps.input-file.outputs.input_file }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- **Force Process:** ${{ github.event.inputs.force_process || 'false' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- **Run Time:** $(date)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## 📁 Generated Output Files" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        if [ -d "output" ]; then
-          find output -type f | sed 's|^\./||' | sort >> $GITHUB_STEP_SUMMARY
-        else
-          echo "No output directory found" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        find . -name "*sample_data*" -type f -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## 📄 Sample Data Preview" >> $GITHUB_STEP_SUMMARY
-        SAMPLE_FILES=$(find . -name "*sample_data*" -type f -not -path "./.git/*" 2>/dev/null | head -3)
-        if [ -n "$SAMPLE_FILES" ]; then
-          for file in $SAMPLE_FILES; do
-            echo "### \`$file\`" >> $GITHUB_STEP_SUMMARY
-            echo '```csv' >> $GITHUB_STEP_SUMMARY
-            head -n 10 "$file" 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "Cannot preview file" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          done
-        else
-          echo "No sample data files found to preview" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "## 📊 Output Statistics" >> $GITHUB_STEP_SUMMARY
-        if [ -d "output" ]; then
-          echo "- **Total Files:** $(find output -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **CSV Files:** $(find output -name "*.csv" | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Other Files:** $(find output -not -name "*.csv" -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
-          
-          # Show file sizes
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### File Sizes" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          find output -type f -exec ls -lh {} \; | awk '{print $5 "\t" $9}' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "No output directory found" >> $GITHUB_STEP_SUMMARY
-        fi
-    
     - name: Handle CI failure
-      if: failure() && steps.run-pipeline.outcome == 'failure'
+      if: failure() && github.event_name != 'workflow_dispatch'
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const commitSha = process.env.GITHUB_SHA;
           const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-          const inputFile = process.env.INPUT_FILE_PATH || 'Not specified';
-          
-          // Check if similar issue already exists
-          const { data: existingIssues } = await github.rest.issues.listForRepo({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            labels: 'ci-failure',
-            state: 'open'
-          });
-          
-          const recentIssue = existingIssues.find(issue => 
-            issue.title.includes('CI Pipeline Failed') && 
-            new Date(issue.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-          );
-          
-          if (recentIssue) {
-            console.log('⚠️ Similar issue already exists, skipping creation');
-            return;
-          }
           
           try {
             await github.rest.issues.create({
@@ -226,24 +110,11 @@ jobs:
               
               The feature engineering CI pipeline failed.
               
-              **Commit:** \`${commitSha}\`
-              **Run:** [View Logs](${runUrl})
-              **Input file:** \`${inputFile}\`
-              **Time:** ${new Date().toLocaleString()}
+              **Commit:** ${commitSha}
+              **Run:** ${runUrl}
+              **Input file:** ${process.env.INPUT_FILE_PATH || 'Not specified'}
               
-              ### Possible Issues:
-              - Check if input CSV file exists and is valid
-              - Verify all dependencies are installed
-              - Check for syntax errors in Python code
-              - Ensure output directory has write permissions
-              
-              ### Next Steps:
-              1. Review the workflow logs above
-              2. Fix the issue in your code
-              3. Push changes to trigger a new run
-              
-              ### Output Status:
-              ${{ steps.run-pipeline.outcome == 'failure' && '❌ No output files generated' || '⚠️ Partial output may be available in artifacts' }}`,
+              Please check the logs for details.`,
               labels: ['bug', 'ci-failure']
             });
             console.log('✅ Created issue for CI failure');
@@ -251,58 +122,23 @@ jobs:
             console.log('⚠️ Could not create issue:', error.message);
           }
     
+    - name: Upload artifacts (CD)
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-engineered-data
+        path: output/
+        retention-days: 7
+    
     - name: Deploy results (optional CD)
-      if: success() && github.ref == 'refs/heads/main'  # Only deploy on main branch
+      if: success()
       run: |
         echo "📦 Preparing deployment..."
         if [ -d "output" ]; then
           echo "✅ Output directory ready for deployment"
-          echo "Files available for deployment:"
+          echo "Files available:"
           ls -la output/
           
           # Optional: Add deployment steps here
-          # Examples:
-          # - Upload to Google Cloud Storage
-          # - Upload to AWS S3
-          # - Notify team via Slack
-          # - Update a deployment branch
-          
-          # Example: Create a deployment branch with outputs
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Check if deployment branch exists
-          if git ls-remote --heads origin deployment-outputs | grep -q deployment-outputs; then
-            echo "Updating existing deployment branch..."
-            git fetch origin deployment-outputs
-            git checkout deployment-outputs || git checkout -b deployment-outputs
-          else
-            echo "Creating new deployment branch..."
-            git checkout -b deployment-outputs
-          fi
-          
-          # Copy outputs to deployment directory
-          mkdir -p deployment_artifacts
-          cp -r output/* deployment_artifacts/ 2>/dev/null || true
-          
-          # Add timestamp
-          echo "Deployment time: $(date)" > deployment_artifacts/deployment_info.txt
-          echo "Commit: ${{ github.sha }}" >> deployment_artifacts/deployment_info.txt
-          
-          git add deployment_artifacts/
-          git commit -m "Deploy feature engineering outputs - ${{ github.sha }}" || echo "No changes to commit"
-          git push origin deployment-outputs --force
-          
-          echo "✅ Deployed to deployment-outputs branch"
-        else
-          echo "⚠️ No output directory to deploy"
+          # For example, upload to cloud storage, notify team, etc.
         fi
-    
-    - name: Notify on success
-      if: success() && github.event_name == 'push'
-      run: |
-        echo "## ✅ Pipeline Successful" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Feature engineering completed successfully!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📦 Outputs are available as artifacts and in the deployment branch (if enabled)" >> $GITHUB_STEP_SUMMARY
