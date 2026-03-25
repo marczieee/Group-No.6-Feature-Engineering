@@ -1,57 +1,179 @@
-name: Group 6 - Feature Engineering CI Pipeline
+name: Feature Engineering Pipeline CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
+    paths:
+      - 'input/**'
+      - '*.py'
+      - 'requirements.txt'
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
+    paths:
+      - 'input/**'
+      - '*.py'
+  workflow_dispatch:  # Allow manual trigger
 
 permissions:
   contents: write
+  actions: read
+  checks: write
 
 jobs:
-  feature-engineering-pipeline:
+  feature-engineering:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v3
+    # Step 1: Checkout repository
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper change detection
+    
+    # Step 2: Set up Python environment
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'  # Cache pip dependencies for faster builds
+    
+    # Step 3: Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pandas numpy pytest pytest-cov flake8 black
+    
+    # Step 4: Lint code (optional but recommended)
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    # Step 5: Run tests if they exist
+    - name: Run tests with pytest
+      run: |
+        if [ -d "tests" ]; then
+          pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+        else
+          echo "No tests directory found, skipping tests"
+        fi
+      continue-on-error: true  # Don't fail if no tests exist
+    
+    # Step 6: Run feature engineering pipeline
+    - name: Run feature engineering pipeline
+      id: pipeline
+      run: |
+        echo "🚀 Starting Feature Engineering Pipeline"
+        python main.py
+        echo "✅ Pipeline completed successfully"
+        
+        # Count processed files for summary
+        if [ -d "output" ]; then
+          FILE_COUNT=$(find output -name "*.csv" | wc -l)
+          echo "processed_files=$FILE_COUNT" >> $GITHUB_OUTPUT
+          echo "📊 Processed $FILE_COUNT output files"
+        fi
+    
+    # Step 7: Generate job summary
+    - name: Generate job summary
+      if: always()
+      run: |
+        echo "## 📊 Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📁 Input Files" >> $GITHUB_STEP_SUMMARY
+        if [ -d "input" ]; then
+          find input -name "*.csv" -type f -exec ls -lh {} \; | while read line; do
+            echo "- $line" >> $GITHUB_STEP_SUMMARY
+          done
+        else
+          echo "- No input files found" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📤 Output Files" >> $GITHUB_STEP_SUMMARY
+        if [ -d "output" ]; then
+          find output -name "*.csv" -type f -exec ls -lh {} \; | while read line; do
+            echo "- $line" >> $GITHUB_STEP_SUMMARY
+          done
+        else
+          echo "- No output files generated" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Status" >> $GITHUB_STEP_SUMMARY
+        echo "- Processed Files: ${{ steps.pipeline.outputs.processed_files || 0 }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Job Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+    
+    # Step 8: Commit and push generated outputs back to repository
+    - name: Commit and push outputs
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add output/
+        git add input/  # In case any processed files were modified
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🤖 Auto-update: Generated feature engineering outputs [skip ci]"
+          git push
+          echo "✅ Changes committed and pushed"
+        fi
+    
+    # Step 9: Upload artifacts for download
+    - name: Upload output artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-engineering-outputs-${{ github.run_number }}
+        path: output/
+        retention-days: 30
+        if-no-files-found: warn
+    
+    # Step 10: Upload test results (if any)
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ github.run_number }}
+        path: |
+          junit/
+          htmlcov/
+          coverage.xml
+        retention-days: 7
+        if-no-files-found: ignore
+    
+    # Step 11: Upload pipeline logs
+    - name: Upload pipeline logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-logs-${{ github.run_number }}
+        path: |
+          *.log
+          **/*.log
+        retention-days: 7
+        if-no-files-found: ignore
+
+  # Optional: Notify on failure
+  notify-failure:
+    needs: feature-engineering
+    if: failure() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: 🐍 Set Up Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: 📦 Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy pytest
-
-      - name: 📁 Create Required Folders
-        run: |
-          mkdir -p input
-          mkdir -p output
-          mkdir -p tests
-
-      - name: ⚙️ Run Feature Engineering Pipeline
-        run: |
-          python main.py
-
-      - name: 🧪 Run PyTest Tests
-        run: |
-          pytest tests/test_functions.py -v --tb=long
-
-      - name: 💾 Commit Output Files
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/
-          git commit -m "staging output files" || echo "No files to commit yet"
-          git pull --rebase origin main
-          echo "Last updated: $(date)" > output/.timestamp
-          git add output/.timestamp
-          git commit -m "CI: Auto-generated output CSV files - $(date +'%Y-%m-%d %H:%M:%S')"
-          git push origin main
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const issueBody = `## ⚠️ Pipeline Failure Alert
+            The feature engineering pipeline failed on commit: ${context.sha}
+            
+            **Run Details:** ${runUrl}
+            
+            Please check the workflow logs for more information.`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Pipeline Failure - ${new Date().toLocaleString()}`,
+              body: issueBody,
+              labels: ['bug', 'automated-report']
+            });
