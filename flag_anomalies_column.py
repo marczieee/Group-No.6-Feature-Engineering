@@ -59,7 +59,7 @@ def flag_anomalies_column(input_file: str, output_file: str) -> pd.DataFrame:
                               (df_copy['score_anomaly'] == 1) | 
                               (df_copy['age_anomaly'] == 1)).astype(int)
     
-    # Save output
+    # Output
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     df_copy.to_csv(output_file, index=False)
     
