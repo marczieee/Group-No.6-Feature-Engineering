@@ -1,4 +1,4 @@
-name: Feature Engineering Pipeline
+name: Feature Engineering CI/CD Pipeline
 
 on:
   push:
@@ -14,7 +14,6 @@ on:
         default: 'false'
         type: boolean
 
-# Add permissions to create issues
 permissions:
   contents: write
   issues: write
@@ -41,70 +40,65 @@ jobs:
         pip install pandas numpy scikit-learn matplotlib seaborn
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
-    - name: List input files
+    - name: List files
       run: |
-        echo "📁 Available CSV files:"
-        find . -name "*.csv" -type f -not -path "./.git/*" | head -10
+        echo "📁 Python files in repository:"
+        ls -la *.py 2>/dev/null || echo "No Python files found"
         echo ""
         echo "📂 Input directory contents:"
-        ls -la input/ || echo "No input directory found"
-        echo ""
-        echo "📂 Python files in repository:"
-        ls -la *.py 2>/dev/null || echo "No Python files found in root"
+        ls -la input/ 2>/dev/null || echo "No input directory"
     
     - name: Determine input file
       id: input-file
       run: |
-        # Check if workflow_dispatch provided a file
-        if [ "${{ github.event.inputs.csv_file }}" != "" ]; then
-          INPUT_FILE="${{ github.event.inputs.csv_file }}"
-          echo "Using workflow_dispatch input: $INPUT_FILE"
+        # Look for CSV files
+        if [ -d "input" ] && [ -n "$(ls -A input/*.csv 2>/dev/null)" ]; then
+          INPUT_FILE=$(ls input/*.csv | head -1)
+          echo "Found CSV file: $INPUT_FILE"
         else
-          # Look for CSV files
-          if [ -d "input" ] && [ -n "$(ls -A input/*.csv 2>/dev/null)" ]; then
-            INPUT_FILE=$(ls input/*.csv | head -1)
-            echo "Found CSV file in input/: $INPUT_FILE"
+          # Look anywhere in repo
+          CSV_FILES=$(find . -name "*.csv" -type f -not -path "./.git/*" -not -path "./output/*" | head -1)
+          if [ -n "$CSV_FILES" ]; then
+            INPUT_FILE="$CSV_FILES"
+            echo "Found CSV file: $INPUT_FILE"
           else
-            # Look anywhere in repo
-            CSV_FILES=$(find . -name "*.csv" -type f -not -path "./.git/*" -not -path "./output/*" | head -1)
-            if [ -n "$CSV_FILES" ]; then
-              INPUT_FILE="$CSV_FILES"
-              echo "Found CSV file: $INPUT_FILE"
-            else
-              echo "❌ No CSV file found!"
-              exit 1
-            fi
+            echo "❌ No CSV file found!"
+            exit 1
           fi
         fi
         
         echo "input_file=$INPUT_FILE" >> $GITHUB_OUTPUT
         echo "INPUT_FILE_PATH=$INPUT_FILE" >> $GITHUB_ENV
     
-    - name: Run feature engineering
-      id: feature-engineering
+    - name: Run feature engineering (CI)
+      id: run-pipeline
       run: |
         # Check if main.py exists
         if [ ! -f "main.py" ]; then
           echo "❌ Error: main.py not found!"
+          echo "Available Python files:"
+          ls -la *.py
           exit 1
         fi
         
+        echo "🚀 Starting CI pipeline..."
+        
         # Run with force flag if requested
         if [ "${{ github.event.inputs.force_process }}" == "true" ]; then
-          echo "Running with --force flag"
           python main.py "${{ steps.input-file.outputs.input_file }}" --force
         else
           python main.py "${{ steps.input-file.outputs.input_file }}"
         fi
+        
+        echo "✅ CI pipeline completed"
       continue-on-error: true
     
-    - name: Handle pipeline failure
+    - name: Handle CI failure
       if: failure() && github.event_name != 'workflow_dispatch'
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fs = require('fs');
           const commitSha = process.env.GITHUB_SHA;
           const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
           
@@ -112,25 +106,24 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Pipeline Failure Alert - ${new Date().toLocaleString()}`,
-              body: `## ⚠️ Pipeline Failure Alert
+              title: `CI Pipeline Failed - ${new Date().toLocaleString()}`,
+              body: `## ❌ CI Pipeline Failure
               
-              The feature engineering pipeline failed.
+              The feature engineering CI pipeline failed.
               
               **Commit:** ${commitSha}
               **Run:** ${runUrl}
               **Input file:** ${process.env.INPUT_FILE_PATH || 'Not specified'}
               
               Please check the logs for details.`,
-              labels: ['bug', 'automated-report']
+              labels: ['bug', 'ci-failure']
             });
-            console.log('✅ Created issue');
+            console.log('✅ Created issue for CI failure');
           } catch (error) {
             console.log('⚠️ Could not create issue:', error.message);
-            // Don't fail the workflow if issue creation fails
           }
     
-    - name: Upload processed files
+    - name: Upload artifacts (CD)
       if: success()
       uses: actions/upload-artifact@v4
       with:
@@ -138,11 +131,15 @@ jobs:
         path: output/
         retention-days: 7
     
-    - name: Commit processed files (optional)
+    - name: Deploy results (optional CD)
       if: success()
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.github.com"
-        git add output/
-        git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update: Feature engineering results [skip ci]"
-        git push || echo "No changes to push"
+        echo "📦 Preparing deployment..."
+        if [ -d "output" ]; then
+          echo "✅ Output directory ready for deployment"
+          echo "Files available:"
+          ls -la output/
+          
+          # Optional: Add deployment steps here
+          # For example, upload to cloud storage, notify team, etc.
+        fi
