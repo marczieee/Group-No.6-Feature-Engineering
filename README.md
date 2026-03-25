@@ -1,4 +1,4 @@
-# 🚀 Group 6 - Feature Engineering Pipeline (Multi-File Support)
+# 🚀 Group 6 - Feature Engineering Pipeline
 
 ## ✨ Key Features
 
