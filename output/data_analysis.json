@@ -1,0 +1,49 @@
+{
+  "file_name": "data.csv",
+  "shape": [
+    10,
+    8
+  ],
+  "columns": [
+    "id",
+    "name",
+    "age",
+    "salary",
+    "department",
+    "join_date",
+    "score",
+    "category"
+  ],
+  "dtypes": {
+    "id": "int64",
+    "name": "object",
+    "age": "int64",
+    "salary": "int64",
+    "department": "object",
+    "join_date": "object",
+    "score": "int64",
+    "category": "object"
+  },
+  "null_counts": {
+    "id": 0,
+    "name": 0,
+    "age": 0,
+    "salary": 0,
+    "department": 0,
+    "join_date": 0,
+    "score": 0,
+    "category": 0
+  },
+  "numeric_columns": [
+    "id",
+    "age",
+    "salary",
+    "score"
+  ],
+  "categorical_columns": [
+    "name",
+    "department",
+    "join_date",
+    "category"
+  ]
+}
