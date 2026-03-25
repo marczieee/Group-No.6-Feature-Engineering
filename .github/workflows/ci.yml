@@ -1,179 +1,138 @@
-name: Feature Engineering Pipeline CI
+name: Feature Engineering Pipeline
 
 on:
   push:
-    branches: [ main, master ]
     paths:
-      - 'input/**'
-      - '*.py'
+      - 'input/*.csv'
+      - '**/*.py'
       - 'requirements.txt'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'input/**'
-      - '*.py'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      force_process:
+        description: 'Force process even if files unchanged'
+        required: false
+        default: 'false'
+        type: boolean
 
+# Add permissions to create issues
 permissions:
   contents: write
-  actions: read
-  checks: write
+  issues: write  # This is important!
+  pull-requests: write
 
 jobs:
   feature-engineering:
     runs-on: ubuntu-latest
     
     steps:
-    # Step 1: Checkout repository
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch all history for proper change detection
+        fetch-depth: 0
     
-    # Step 2: Set up Python environment
-    - name: Set up Python 3.10
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        cache: 'pip'  # Cache pip dependencies for faster builds
     
-    # Step 3: Install dependencies
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install pandas numpy scikit-learn matplotlib seaborn
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install pandas numpy pytest pytest-cov flake8 black
     
-    # Step 4: Lint code (optional but recommended)
-    - name: Lint with flake8
+    - name: List input files
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        echo "📁 Available CSV files:"
+        find . -name "*.csv" -type f -not -path "./.git/*" | head -10
+        echo ""
+        echo "📂 Input directory contents:"
+        ls -la input/ || echo "No input directory found"
     
-    # Step 5: Run tests if they exist
-    - name: Run tests with pytest
+    - name: Determine input file
+      id: input-file
       run: |
-        if [ -d "tests" ]; then
-          pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+        # Check if workflow_dispatch provided a file
+        if [ "${{ github.event.inputs.csv_file }}" != "" ]; then
+          INPUT_FILE="${{ github.event.inputs.csv_file }}"
+          echo "Using workflow_dispatch input: $INPUT_FILE"
         else
-          echo "No tests directory found, skipping tests"
+          # Look for CSV files
+          if [ -d "input" ] && [ -n "$(ls -A input/*.csv 2>/dev/null)" ]; then
+            INPUT_FILE=$(ls input/*.csv | head -1)
+            echo "Found CSV file: $INPUT_FILE"
+          else
+            # Look anywhere in repo
+            CSV_FILES=$(find . -name "*.csv" -type f -not -path "./.git/*" -not -path "./output/*" | head -1)
+            if [ -n "$CSV_FILES" ]; then
+              INPUT_FILE="$CSV_FILES"
+              echo "Found CSV file: $INPUT_FILE"
+            else
+              echo "❌ No CSV file found!"
+              exit 1
+            fi
+          fi
         fi
-      continue-on-error: true  # Don't fail if no tests exist
-    
-    # Step 6: Run feature engineering pipeline
-    - name: Run feature engineering pipeline
-      id: pipeline
-      run: |
-        echo "🚀 Starting Feature Engineering Pipeline"
-        python main.py
-        echo "✅ Pipeline completed successfully"
         
-        # Count processed files for summary
-        if [ -d "output" ]; then
-          FILE_COUNT=$(find output -name "*.csv" | wc -l)
-          echo "processed_files=$FILE_COUNT" >> $GITHUB_OUTPUT
-          echo "📊 Processed $FILE_COUNT output files"
-        fi
+        echo "input_file=$INPUT_FILE" >> $GITHUB_OUTPUT
+        echo "INPUT_FILE_PATH=$INPUT_FILE" >> $GITHUB_ENV
     
-    # Step 7: Generate job summary
-    - name: Generate job summary
-      if: always()
+    - name: Run feature engineering
+      id: feature-engineering
       run: |
-        echo "## 📊 Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📁 Input Files" >> $GITHUB_STEP_SUMMARY
-        if [ -d "input" ]; then
-          find input -name "*.csv" -type f -exec ls -lh {} \; | while read line; do
-            echo "- $line" >> $GITHUB_STEP_SUMMARY
-          done
+        # Run with force flag if requested
+        if [ "${{ github.event.inputs.force_process }}" == "true" ]; then
+          python feature_engineering.py "${{ steps.input-file.outputs.input_file }}" --force
         else
-          echo "- No input files found" >> $GITHUB_STEP_SUMMARY
+          python feature_engineering.py "${{ steps.input-file.outputs.input_file }}"
         fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📤 Output Files" >> $GITHUB_STEP_SUMMARY
-        if [ -d "output" ]; then
-          find output -name "*.csv" -type f -exec ls -lh {} \; | while read line; do
-            echo "- $line" >> $GITHUB_STEP_SUMMARY
-          done
-        else
-          echo "- No output files generated" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ✅ Status" >> $GITHUB_STEP_SUMMARY
-        echo "- Processed Files: ${{ steps.pipeline.outputs.processed_files || 0 }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Job Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+      continue-on-error: true
     
-    # Step 8: Commit and push generated outputs back to repository
-    - name: Commit and push outputs
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add output/
-        git add input/  # In case any processed files were modified
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "🤖 Auto-update: Generated feature engineering outputs [skip ci]"
-          git push
-          echo "✅ Changes committed and pushed"
-        fi
-    
-    # Step 9: Upload artifacts for download
-    - name: Upload output artifacts
-      uses: actions/upload-artifact@v4
+    - name: Handle pipeline failure
+      if: failure() && github.event_name != 'workflow_dispatch'
+      uses: actions/github-script@v7
       with:
-        name: feature-engineering-outputs-${{ github.run_number }}
-        path: output/
-        retention-days: 30
-        if-no-files-found: warn
-    
-    # Step 10: Upload test results (if any)
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ github.run_number }}
-        path: |
-          junit/
-          htmlcov/
-          coverage.xml
-        retention-days: 7
-        if-no-files-found: ignore
-    
-    # Step 11: Upload pipeline logs
-    - name: Upload pipeline logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: pipeline-logs-${{ github.run_number }}
-        path: |
-          *.log
-          **/*.log
-        retention-days: 7
-        if-no-files-found: ignore
-
-  # Optional: Notify on failure
-  notify-failure:
-    needs: feature-engineering
-    if: failure() && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create issue on failure
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const issueBody = `## ⚠️ Pipeline Failure Alert
-            The feature engineering pipeline failed on commit: ${context.sha}
-            
-            **Run Details:** ${runUrl}
-            
-            Please check the workflow logs for more information.`;
-            
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const commitSha = process.env.GITHUB_SHA;
+          const runUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          
+          try {
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Pipeline Failure - ${new Date().toLocaleString()}`,
-              body: issueBody,
+              title: `Pipeline Failure Alert - ${new Date().toLocaleString()}`,
+              body: `## ⚠️ Pipeline Failure Alert
+              
+              The feature engineering pipeline failed.
+              
+              **Commit:** ${commitSha}
+              **Run:** ${runUrl}
+              **Input file:** ${process.env.INPUT_FILE_PATH || 'Not specified'}
+              
+              Please check the logs for details.`,
               labels: ['bug', 'automated-report']
             });
+            console.log('✅ Created issue');
+          } catch (error) {
+            console.log('⚠️ Could not create issue:', error.message);
+            // Don't fail the workflow if issue creation fails
+          }
+    
+    - name: Upload processed files
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-engineered-data
+        path: output/
+        retention-days: 7
+    
+    - name: Commit processed files (optional)
+      if: success()
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add output/
+        git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update: Feature engineering results [skip ci]"
+        git push || echo "No changes to push"

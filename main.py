@@ -1,215 +1,265 @@
+#!/usr/bin/env python3
+"""
+Feature Engineering Pipeline - Non-interactive version for CI/CD
+"""
+
 import os
 import sys
 import pandas as pd
-import hashlib
-import json
+import numpy as np
 from datetime import datetime
+import json
+import hashlib
 
-from derive_computed_columns      import derive_computed_columns
-from encode_categorical_features  import encode_categorical_features
-from bin_numeric_ranges           import bin_numeric_ranges
-from time_based_feature_extraction import time_based_feature_extraction
-from flag_anomalies_column        import flag_anomalies_column
+def create_output_directory():
+    """Create output directory if it doesn't exist"""
+    os.makedirs('output', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
 
-INPUT_FILE = "input/data.csv"
-HASH_FILE = "input/.data_hash.json"
+def log_message(msg, level="INFO"):
+    """Log message to console and file"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] {level}: {msg}"
+    print(log_entry)
+    
+    # Also write to log file
+    with open('logs/pipeline.log', 'a') as f:
+        f.write(log_entry + '\n')
 
-OUTPUT_FILES = {
-    "derived_computed_columns"     : "output/derived_computed_columns.csv",
-    "encoded_categorical_features" : "output/encoded_categorical_features.csv",
-    "binned_numeric_ranges"        : "output/binned_numeric_ranges.csv",
-    "time_based_features"          : "output/time_based_features.csv",
-    "flagged_anomalies"            : "output/flagged_anomalies.csv",
-    "consolidated_all_features"    : "output/consolidated_all_features.csv",
-}
-
-def get_input_hash():
-    """Calculate hash of input file to detect changes"""
-    if not os.path.exists(INPUT_FILE):
+def get_file_hash(file_path):
+    """Get hash of file to check for changes"""
+    if not os.path.exists(file_path):
         return None
-    df = pd.read_csv(INPUT_FILE)
-    return hashlib.md5(df.to_string().encode()).hexdigest()
-
-def has_input_changed():
-    """Check if input file has changed since last run"""
-    current_hash = get_input_hash()
-    if not current_hash:
-        return True
     
-    if os.path.exists(HASH_FILE):
-        with open(HASH_FILE, 'r') as f:
-            stored_hash = json.load(f).get('hash')
-        return current_hash != stored_hash
-    return True
+    with open(file_path, 'rb') as f:
+        return hashlib.md5(f.read()).hexdigest()
 
-def save_input_hash():
-    """Save current input hash for next run"""
-    current_hash = get_input_hash()
-    if current_hash:
-        with open(HASH_FILE, 'w') as f:
-            json.dump({'hash': current_hash, 'timestamp': datetime.now().isoformat()}, f)
-
-def run_pipeline():
-    print("=" * 55)
-    print("  Group 6 — Feature Engineering CSV Pipeline")
-    print("=" * 55)
-
-    if not os.path.exists(INPUT_FILE):
-        print(f"\n❌ ERROR: Input file '{INPUT_FILE}' not found!")
-        print("   Please place your CSV file in the 'input/' folder.")
-        sys.exit(1)
-
+def check_if_processed(file_path):
+    """Check if file has been processed before"""
+    hash_file = f'output/.{os.path.basename(file_path)}.hash'
     
-    input_changed = has_input_changed()
-    if not input_changed:
-        print("\n⚠️  Input file hasn't changed since last run.")
-        response = input("Do you still want to process? (y/n): ")
-        if response.lower() != 'y':
-            print("❌ Pipeline cancelled.")
-            return
-
-    print(f"\n📂 Input  : {INPUT_FILE}")
-    print(f"📁 Output : output/\n")
-
-    os.makedirs("output", exist_ok=True)
-
-    print("\n" + "-" * 55)
-    print("📊 Running Function 1: Derive Computed Columns")
-    derive_computed_columns(
-        INPUT_FILE,
-        OUTPUT_FILES["derived_computed_columns"]
-    )
-
-    print("\n" + "-" * 55)
-    print("📊 Running Function 2: Encode Categorical Features")
-    encode_categorical_features(
-        INPUT_FILE,
-        OUTPUT_FILES["encoded_categorical_features"]
-    )
-
-    print("\n" + "-" * 55)
-    print("📊 Running Function 3: Bin Numeric Ranges")
-    bin_numeric_ranges(
-        INPUT_FILE,
-        OUTPUT_FILES["binned_numeric_ranges"]
-    )
-
-    print("\n" + "-" * 55)
-    print("📊 Running Function 4: Time-Based Feature Extraction")
-    time_based_feature_extraction(
-        INPUT_FILE,
-        OUTPUT_FILES["time_based_features"]
-    )
-
-    print("\n" + "-" * 55)
-    print("📊 Running Function 5: Flag Anomalies Column")
-    flag_anomalies_column(
-        INPUT_FILE,
-        OUTPUT_FILES["flagged_anomalies"]
-    )
-
-    print("\n" + "=" * 55)
-    print("  ✅ Pipeline complete! All output files saved.")
-    print("=" * 55)
-
+    current_hash = get_file_hash(file_path)
     
-    save_input_hash()
+    if os.path.exists(hash_file):
+        with open(hash_file, 'r') as f:
+            previous_hash = f.read().strip()
+        
+        if previous_hash == current_hash:
+            return True
+    
+    # Save current hash
+    with open(hash_file, 'w') as f:
+        f.write(current_hash)
+    
+    return False
 
-    print("\n📄 Output files generated:")
-    for name, path in OUTPUT_FILES.items():
-        if name != "consolidated_all_features":
-            size = os.path.getsize(path) if os.path.exists(path) else 0
-            print(f"   • {path}  ({size} bytes)")
-    
-    create_consolidated_csv()
-
-def create_consolidated_csv():
-    print("\n" + "=" * 55)
-    print("  🔄 Creating Consolidated CSV File")
-    print("=" * 55)
-    
-    output_files = [
-        'output/derived_computed_columns.csv',
-        'output/encoded_categorical_features.csv',
-        'output/binned_numeric_ranges.csv',
-        'output/time_based_features.csv',
-        'output/flagged_anomalies.csv'
-    ]
-    
-    all_files_exist = True
-    for file in output_files:
-        if not os.path.exists(file):
-            print(f"❌ Cannot find {file}")
-            all_files_exist = False
-    
-    if not all_files_exist:
-        print("❌ Cannot create consolidated file - missing output files")
-        return
-    
+def load_csv(file_path):
+    """Load CSV file with flexible parsing"""
     try:
-        dataframes = []
-        file_names = []
+        # Try different encodings
+        for encoding in ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']:
+            try:
+                df = pd.read_csv(file_path, encoding=encoding)
+                log_message(f"✅ Loaded CSV with {encoding} encoding")
+                return df
+            except UnicodeDecodeError:
+                continue
         
-        for file in output_files:
-            df = pd.read_csv(file)
-            # REMOVED: No need to filter internal columns anymore
-            dataframes.append(df)
-            file_names.append(os.path.basename(file))
-            print(f"✅ Read {os.path.basename(file)} - {len(df.columns)} columns")
-        
-        first_df = dataframes[0]
-        merge_key = 'id' if 'id' in first_df.columns else first_df.columns[0]
-        print(f"📊 Using '{merge_key}' as merge key")
-        
-        columns_to_drop = ['name', 'age', 'salary', 'department', 'join_date', 'score', 'category']
-        
-        consolidated = first_df.copy()
-        print(f"📌 Base dataframe: {file_names[0]} - kept all {len(consolidated.columns)} columns")
-        
-        for i, df in enumerate(dataframes[1:], 2):
-            columns_to_keep = []
-            for col in df.columns:
-                if col == merge_key:
-                    columns_to_keep.append(col)
-                elif col not in columns_to_drop:
-                    columns_to_keep.append(col)
-                else:
-                    print(f"  ⏩ Removing duplicate column: '{col}' from {file_names[i-1]}")
-            
-            if len(columns_to_keep) > 1:
-                consolidated = pd.merge(
-                    consolidated, 
-                    df[columns_to_keep], 
-                    on=merge_key, 
-                    how='outer'
-                )
-                print(f"  ✓ Merged {file_names[i-1]} - added {len(columns_to_keep)-1} new columns")
-            else:
-                print(f"  ⚠️ No new columns in {file_names[i-1]}, skipping merge")
-        
-        # REMOVED: '_report_generated' timestamp line
-        
-        output_path = OUTPUT_FILES["consolidated_all_features"]
-        consolidated.to_csv(output_path, index=False)
-        
-        print("\n" + "-" * 55)
-        print(f"✅ CONSOLIDATED CSV GENERATED SUCCESSFULLY!")
-        print(f"📁 Location: {output_path}")
-        print(f"📊 Total columns: {len(consolidated.columns)}")
-        print(f"📊 Total rows: {len(consolidated)}")
-        
-        file_size = os.path.getsize(output_path)
-        print(f"💾 File size: {file_size} bytes ({file_size/1024:.2f} KB)")
-        
-        all_columns = list(consolidated.columns)
-        print(f"\n📋 First 15 columns: {', '.join(all_columns[:15])}")
-        if len(all_columns) > 15:
-            print(f"   ... and {len(all_columns) - 15} more columns")
+        # If all encodings fail, try with engine='python'
+        df = pd.read_csv(file_path, engine='python')
+        log_message(f"✅ Loaded CSV with Python engine")
+        return df
         
     except Exception as e:
-        print(f"❌ Error creating consolidated CSV: {e}")
-        import traceback
-        traceback.print_exc()
+        log_message(f"❌ Error loading CSV: {e}", "ERROR")
+        raise
+
+def analyze_dataframe(df, file_name):
+    """Analyze and provide information about the dataframe"""
+    log_message("=" * 60)
+    log_message("📊 DATA ANALYSIS")
+    log_message("=" * 60)
+    log_message(f"File: {file_name}")
+    log_message(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns")
+    log_message(f"Columns: {list(df.columns)}")
+    
+    # Save initial analysis
+    analysis = {
+        'file_name': file_name,
+        'shape': df.shape,
+        'columns': list(df.columns),
+        'dtypes': {col: str(df[col].dtype) for col in df.columns},
+        'null_counts': df.isnull().sum().to_dict(),
+        'numeric_columns': list(df.select_dtypes(include=[np.number]).columns),
+        'categorical_columns': list(df.select_dtypes(include=['object']).columns)
+    }
+    
+    with open('output/data_analysis.json', 'w') as f:
+        json.dump(analysis, f, indent=2, default=str)
+    
+    log_message(f"✅ Analysis saved to output/data_analysis.json")
+    
+    return analysis
+
+def perform_feature_engineering(df, analysis):
+    """Perform feature engineering based on data types"""
+    log_message("=" * 60)
+    log_message("🔧 FEATURE ENGINEERING")
+    log_message("=" * 60)
+    
+    df_processed = df.copy()
+    transformations = []
+    
+    # 1. Handle missing values
+    if df_processed.isnull().any().any():
+        log_message("Handling missing values...")
+        for col in df_processed.columns:
+            null_count = df_processed[col].isnull().sum()
+            if null_count > 0:
+                if df_processed[col].dtype in ['int64', 'float64']:
+                    df_processed[col].fillna(df_processed[col].median(), inplace=True)
+                    transformations.append(f"Filled {null_count} missing values in {col} with median")
+                else:
+                    df_processed[col].fillna('Unknown', inplace=True)
+                    transformations.append(f"Filled {null_count} missing values in {col} with 'Unknown'")
+        
+        log_message(f"✅ Handled missing values")
+    
+    # 2. Create derived features for numeric columns
+    numeric_cols = analysis['numeric_columns']
+    if len(numeric_cols) >= 2:
+        log_message("Creating derived numeric features...")
+        for i in range(min(len(numeric_cols), 3)):
+            col = numeric_cols[i]
+            # Create bins
+            df_processed[f'{col}_binned'] = pd.cut(df_processed[col], bins=5, labels=False)
+            transformations.append(f"Created binned feature for {col}")
+            
+            # Create normalized version
+            if df_processed[col].std() > 0:
+                df_processed[f'{col}_normalized'] = (df_processed[col] - df_processed[col].mean()) / df_processed[col].std()
+                transformations.append(f"Created normalized feature for {col}")
+    
+    # 3. Process categorical columns
+    cat_cols = analysis['categorical_columns']
+    if cat_cols:
+        log_message("Processing categorical features...")
+        for col in cat_cols[:5]:  # Limit to 5 columns to avoid explosion
+            # One-hot encoding for columns with few unique values
+            if df_processed[col].nunique() <= 10:
+                dummies = pd.get_dummies(df_processed[col], prefix=col, drop_first=True)
+                df_processed = pd.concat([df_processed, dummies], axis=1)
+                transformations.append(f"One-hot encoded {col}")
+            
+            # Label encoding for text columns with many values
+            else:
+                df_processed[f'{col}_encoded'] = df_processed[col].astype('category').cat.codes
+                transformations.append(f"Label encoded {col}")
+    
+    # 4. Add metadata features
+    df_processed['_record_id'] = range(len(df_processed))
+    transformations.append("Added record IDs")
+    
+    # 5. Save transformations log
+    with open('output/transformations.log', 'w') as f:
+        f.write("\n".join(transformations))
+    
+    log_message(f"✅ Performed {len(transformations)} transformations")
+    
+    return df_processed
+
+def main():
+    """Main execution function"""
+    print("\n" + "="*60)
+    print("  Group 6 — Feature Engineering Pipeline")
+    print("="*60 + "\n")
+    
+    # Parse command line arguments
+    force_process = '--force' in sys.argv
+    
+    # Get input file from command line argument
+    input_file = None
+    for arg in sys.argv[1:]:
+        if not arg.startswith('--'):
+            input_file = arg
+            break
+    
+    if not input_file:
+        # Look for CSV files in input directory
+        input_dir = 'input'
+        if os.path.exists(input_dir):
+            csv_files = [f for f in os.listdir(input_dir) if f.endswith('.csv')]
+            if csv_files:
+                input_file = os.path.join(input_dir, csv_files[0])
+                print(f"📁 Using input file: {input_file}")
+            else:
+                print("❌ No CSV files found in 'input/' directory!")
+                sys.exit(1)
+        else:
+            print("❌ No input file specified and 'input/' directory not found!")
+            print("Usage: python feature_engineering.py <path_to_csv_file> [--force]")
+            sys.exit(1)
+    else:
+        print(f"📁 Using input file: {input_file}")
+    
+    # Check if file has been processed before
+    if not force_process and check_if_processed(input_file):
+        print(f"\n⚠️  File {os.path.basename(input_file)} hasn't changed since last run.")
+        print("Use --force flag to process anyway.")
+        print("Skipping processing...\n")
+        sys.exit(0)
+    
+    # Create directories
+    create_output_directory()
+    
+    try:
+        # Load data
+        log_message(f"Loading data from: {input_file}")
+        df = load_csv(input_file)
+        log_message(f"✅ Loaded {len(df)} records")
+        
+        # Save original data
+        original_file = f"output/original_data.csv"
+        df.to_csv(original_file, index=False)
+        log_message(f"✅ Original data saved to {original_file}")
+        
+        # Analyze data
+        analysis = analyze_dataframe(df, os.path.basename(input_file))
+        
+        # Perform feature engineering
+        df_processed = perform_feature_engineering(df, analysis)
+        
+        # Save processed data
+        output_file = f"output/processed_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        df_processed.to_csv(output_file, index=False)
+        log_message(f"✅ Processed data saved to {output_file}")
+        
+        # Save summary report
+        summary = {
+            'timestamp': datetime.now().isoformat(),
+            'input_file': input_file,
+            'original_shape': df.shape,
+            'processed_shape': df_processed.shape,
+            'features_created': df_processed.shape[1] - df.shape[1],
+            'transformations': []
+        }
+        
+        with open('output/pipeline_summary.json', 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+        
+        # Final report
+        print("\n" + "="*60)
+        print("✅ PIPELINE COMPLETED SUCCESSFULLY")
+        print("="*60)
+        print(f"📊 Original shape: {df.shape}")
+        print(f"📈 Processed shape: {df_processed.shape}")
+        print(f"✨ Features added: {df_processed.shape[1] - df.shape[1]}")
+        print(f"📁 Output files in 'output/' directory")
+        print("="*60 + "\n")
+        
+    except Exception as e:
+        log_message(f"❌ Pipeline failed: {e}", "ERROR")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()
