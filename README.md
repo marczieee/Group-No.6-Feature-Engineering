@@ -1,232 +1,217 @@
-# 🚀 Group 6 - Feature Engineering Pipeline
+ ## 📊 Group 6 — Feature Engineering CSV Pipeline
 
-## ✨ Key Features
+ DEV OPS | Automated CSV Data Processing using GitHub Actions CI Pipeline 
 
-✅ **Automatic Processing** - Processes ALL CSV files in the `input/` folder automatically  
-✅ **CI/CD Ready** - Runs seamlessly in GitHub Actions without manual input  
-✅ **Multi-File Support** - Handle multiple datasets simultaneously  
-✅ **Smart Caching** - Only reprocesses files that have changed  
-✅ **Organized Outputs** - Each input file gets its own output subdirectory  
+---
+
+## 👥 Group Members
+
+| Names:                  |
+|-------------------------|
+| Aganan, Akira Yuki      |
+| Bolina, Renz Andrae     |
+| Gelera, Marc Eldrian    |
+| Pacheco, Haroliyen      |
+
+| Role                    | Responsibility                                      |
+|-------------------------|-----------------------------------------------------|
+| Haro (Data Processing Lead)    | Implements the 5 CSV processing Python functions    |
+| Marc (DevOps Engineer)         | Configures the GitHub Actions CI pipeline           |
+| Akira (Tester)                  | Writes and validates PyTest test cases              |
+| Renz Andrae (Documenter / Presenter)  | Prepares README and presentation slides             |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Group-No.6-Feature-Engineering/
+group6-feature-engineering/
 │
-├── input/                          # 📥 Place your CSV files here
-│   ├── data.csv                    # Your input files
-│   ├── sales_data.csv              # Can have multiple files
-│   └── customer_data.csv           # All will be processed
+├── .github/
+│   └── workflows/
+│       └── ci.yml                        ← GitHub Actions CI pipeline
 │
-├── output/                         # 📤 Generated outputs
-│   ├── data/                       # Outputs for data.csv
-│   │   ├── derived_computed_columns.csv
-│   │   ├── encoded_categorical_features.csv
-│   │   ├── binned_numeric_ranges.csv
-│   │   ├── time_based_features.csv
-│   │   ├── flagged_anomalies.csv
-│   │   └── consolidated_all_features.csv
-│   │
-│   ├── sales_data/                 # Outputs for sales_data.csv
-│   │   └── ... (same structure)
-│   │
-│   └── customer_data/              # Outputs for customer_data.csv
-│       └── ... (same structure)
+├── input/
+│   └── data.csv                          ← Input CSV file (place yours here)
 │
-├── main.py                         # 🎯 Main pipeline script
-├── derive_computed_columns.py
-├── encode_categorical_features.py
-├── bin_numeric_ranges.py
-├── time_based_feature_extraction.py
-├── flag_anomalies_column.py
-└── .github/
-    └── workflows/
-        └── ci.yml                  # GitHub Actions configuration
+├── output/                               ← Auto-generated processed CSV files
+│   ├── derived_computed_columns.csv
+│   ├── encoded_categorical_features.csv
+│   ├── binned_numeric_ranges.csv
+│   ├── time_based_features.csv
+│   └── flagged_anomalies.csv
+│
+├── derive_computed_columns.py            ← Function 1
+├── encode_categorical_features.py        ← Function 2
+├── bin_numeric_ranges.py                 ← Function 3
+├── time_based_feature_extraction.py      ← Function 4
+├── flag_anomalies_column.py              ← Function 5
+├── main.py                               ← Runs all 5 functions
+│
+├── tests/
+│   └── test_functions.py                 ← PyTest test cases
+│
+├── requirements.txt                      ← Python dependencies
+└── README.md                             ← This file
 ```
 
 ---
 
-## 🎯 How to Use
+## ⚙️ Functions Implemented
 
-### **Method 1: Local Execution**
+### 1. `derive_computed_columns.py`
+Adds new computed columns derived from existing numeric data.
 
-1. **Add your CSV files** to the `input/` folder:
-   ```bash
-   cp your_data.csv input/
-   ```
-
-2. **Run the pipeline**:
-   ```bash
-   python main.py
-   ```
-
-3. **Check outputs** in `output/your_data/` folder
-
-### **Method 2: GitHub Actions (Automatic)**
-
-1. **Add CSV files** to the `input/` folder
-
-2. **Commit and push**:
-   ```bash
-   git add input/your_data.csv
-   git commit -m "Add new dataset"
-   git push origin main
-   ```
-
-3. **CI automatically runs** and:
-   - ✅ Processes all files in `input/`
-   - ✅ Generates outputs in `output/`
-   - ✅ Commits results back to repository
-   - ✅ Creates downloadable artifacts
-
-4. **View results**:
-   - Check the `output/` folder in your repository
-   - Download artifacts from GitHub Actions tab
-   - View job summary for processing details
+| New Column       | Description                              |
+|------------------|------------------------------------------|
+| `salary_per_age` | Salary divided by age (efficiency ratio) |
+| `annual_bonus`   | 10% of salary as estimated bonus         |
+| `is_senior`      | 1 if age ≥ 60, else 0                    |
+| `salary_level`   | High / Mid / Low based on salary range   |
+| `score_rank`     | Score normalized out of 10               |
 
 ---
 
-## 🔧 What Changed from Original
+### 2. `encode_categorical_features.py`
+Converts categorical/text columns into numeric form for ML compatibility.
 
-### ✅ **Fixed Issues**
-
-| Issue | Solution |
-|-------|----------|
-| ❌ Hardcoded `input/data.csv` | ✅ Now scans entire `input/` folder |
-| ❌ Interactive prompts block CI | ✅ Auto-detects CI environment |
-| ❌ Single file only | ✅ Processes multiple files automatically |
-| ❌ No output organization | ✅ Separate folders per input file |
-
-### 🆕 **New Features**
-
-1. **Multi-File Processing**: Drop multiple CSV files in `input/`, all get processed
-2. **Smart Change Detection**: Only reprocesses files that have changed (hash-based)
-3. **CI Environment Detection**: Skips interactive prompts when running in GitHub Actions
-4. **Better Output Organization**: Each input file gets its own output subdirectory
-5. **Comprehensive Logging**: Detailed processing information and summaries
-6. **Artifact Upload**: Outputs available as downloadable GitHub artifacts
+| Transformation         | Description                                            |
+|------------------------|--------------------------------------------------------|
+| One-hot encode dept    | `department` → `dept_HR`, `dept_IT`, `dept_Finance`   |
+| Label encode category  | `category` A=1, B=2, C=3 → `category_encoded`         |
 
 ---
 
-## 🎓 For Your Professor
+### 3. `bin_numeric_ranges.py`
+Groups continuous numeric values into meaningful labeled buckets.
 
-### **Requirements Met:**
+| New Column      | Bins                                              |
+|-----------------|---------------------------------------------------|
+| `age_group`     | Young / Adult / Mid-Age / Senior                  |
+| `salary_range`  | Entry / Mid / Senior / Executive                  |
+| `score_grade`   | Fail / Pass / Good / Excellent                    |
 
-✅ **"Any files can be input in the repository"**  
-   - Place any CSV file in `input/` folder → automatically processed
+---
 
-✅ **"Can input any files in the input folder"**  
-   - Supports unlimited number of CSV files
-   - No hardcoded filenames
+### 4. `time_based_feature_extraction.py`
+Extracts useful date/time-based features from date columns.
 
-✅ **"Automated using our project"**  
-   - GitHub Actions CI runs automatically on push
-   - No manual intervention needed
+| New Column          | Description                                    |
+|---------------------|------------------------------------------------|
+| `join_year`         | Year extracted from join_date                  |
+| `join_month`        | Month number (1–12)                            |
+| `join_quarter`      | Quarter (1–4)                                  |
+| `join_day_of_week`  | Day of week (0=Monday, 6=Sunday)               |
+| `years_in_company`  | Total years since joining (rounded to 1 decimal)|
+| `is_recent_hire`    | 1 if joined 2021 or later, else 0              |
 
-✅ **"Output can be seen or handled"**  
-   - Outputs committed back to repository in `output/` folder
-   - Available as downloadable artifacts
-   - Job summary shows processing details
+---
 
-### **Testing the System:**
+### 5. `flag_anomalies_column.py`
+Detects statistical outliers and flags them in the dataset.
 
+| New Column        | Method Used                                    |
+|-------------------|------------------------------------------------|
+| `salary_anomaly`  | IQR method (1.5× IQR rule)                    |
+| `score_anomaly`   | Z-score method (±2 standard deviations)        |
+| `age_anomaly`     | IQR method                                     |
+| `is_anomaly`      | 1 if ANY individual flag is triggered          |
+
+---
+
+## 🚀 How to Run Locally
+
+### 1. Clone the repository
 ```bash
-# Test 1: Single file
-echo "id,name,age,salary,department,join_date,score,category
-1,Alice,25,50000,IT,2020-01-15,85,A" > input/test1.csv
-git add input/test1.csv
-git commit -m "Test: Single file"
-git push
+git clone https://github.com/YOUR_USERNAME/group6-feature-engineering.git
+cd group6-feature-engineering
+```
 
-# Test 2: Multiple files
-cp input/test1.csv input/test2.csv
-cp input/test1.csv input/test3.csv
-git add input/
-git commit -m "Test: Multiple files"
-git push
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-# Check output/ folder after CI completes
+### 3. Place your CSV file in the input folder
+```bash
+# Your file should be at: input/data.csv
+```
+
+### 4. Run the full pipeline
+```bash
+python main.py
+```
+
+### 5. Run all tests
+```bash
+pytest tests/test_functions.py -v
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 🔄 CI/CD Workflow
 
-### **"No CSV files found"**
-- Ensure files are in `input/` folder
-- Files must have `.csv` extension
-- Files must not start with `.` (hidden)
-
-### **"CI fails to commit"**
-- Check GitHub Actions has write permissions
-- Verify `permissions: contents: write` in workflow
-
-### **"Pipeline runs but no outputs"**
-- Check CI logs for error messages
-- Verify input CSV has proper format
-- Check individual function files are present
-
----
-
-## 📊 CI/CD Pipeline Details
-
-The GitHub Actions workflow:
-
-1. **Triggers on**:
-   - Push to `main` branch
-   - Changes to `input/` folder
-   - Changes to Python files
-   - Manual trigger via workflow_dispatch
-
-2. **Runs**:
-   - Sets up Python 3.10
-   - Installs dependencies (pandas, numpy, pytest)
-   - Processes all CSV files in `input/`
-   - Runs tests (if available)
-   - Commits outputs back to repository
-   - Uploads artifacts for download
-
-3. **Outputs**:
-   - Generated CSV files in `output/`
-   - Job summary with file counts
-   - Downloadable artifacts (30-day retention)
-
----
-
-## 💡 Tips
-
-- **Large files**: CI works best with files < 100MB
-- **Multiple datasets**: All files processed in parallel
-- **Change detection**: Only changed files reprocess (saves time)
-- **Manual override**: In local mode, can force reprocess all files
-
----
-
-## 📝 Example Output
+Every `git push` or `pull request` to the `main` branch automatically triggers the GitHub Actions pipeline:
 
 ```
-📋 Found 3 CSV file(s) in input folder:
-   • data.csv (1,234 bytes)
-   • sales.csv (5,678 bytes)
-   • customers.csv (3,456 bytes)
+Push to GitHub
+     │
+     ▼
+GitHub Actions Triggered
+     │
+     ├─ 1. Checkout repository code
+     ├─ 2. Set up Python 3.10
+     ├─ 3. Install requirements (pandas, numpy, pytest)
+     ├─ 4. Run main.py (all 5 functions process input/data.csv)
+     ├─ 5. Run pytest (validates all 5 functions pass tests)
+     └─ 6. Commit & push output/ CSV files back to repository
+```
 
-======================================================================
-  Processing File 1/3: data.csv
-======================================================================
-📊 Running Function 1: Derive Computed Columns
-✅ Derived columns saved to output/data/derived_computed_columns.csv
+The pipeline is defined in: `.github/workflows/ci.yml`
 
-... (continues for all functions)
+---
 
-✅ Pipeline complete for data.csv!
+## 🧪 Testing Strategy
 
-📁 Output directory: output/
+All 5 functions are tested using **PyTest**. Tests cover:
+
+- Output file is created successfully
+- New columns are added with correct names
+- Column values are within expected ranges / valid labels
+- Binary flag columns only contain 0 or 1
+- No null values in critical columns
+- Row count is preserved (no data loss)
+- Business logic correctness (e.g., `is_senior` correct for age ≥ 60)
+
+Run tests with:
+```bash
+pytest tests/test_functions.py -v
 ```
 
 ---
 
-## 🎉 Ready to Use!
+## 📦 Dependencies
 
-Just push your CSV files to `input/` and watch the magic happen! 🚀
+| Package  | Version   | Purpose                        |
+|----------|-----------|--------------------------------|
+| pandas   | ≥ 1.5.0   | CSV loading and data processing|
+| numpy    | ≥ 1.23.0  | Numeric computations           |
+| pytest   | ≥ 7.0.0   | Automated testing              |
+
+---
+
+## 📋 Input CSV Format
+
+Your input CSV (`input/data.csv`) should contain these columns:
+
+| Column       | Type    | Example        |
+|--------------|---------|----------------|
+| `id`         | integer | 1              |
+| `name`       | string  | Alice          |
+| `age`        | integer | 25             |
+| `salary`     | float   | 50000          |
+| `department` | string  | HR / IT / Finance |
+| `join_date`  | date    | 2021-03-15     |
+| `score`      | integer | 88             |
+| `category`   | string  | A / B / C      |
+
