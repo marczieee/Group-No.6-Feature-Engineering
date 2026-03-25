@@ -6,6 +6,8 @@ on:
       - 'input/*.csv'
       - '**/*.py'
       - 'requirements.txt'
+      - 'README.md'
+      - '**.md'
   workflow_dispatch:
     inputs:
       force_process:
@@ -51,6 +53,9 @@ jobs:
         echo ""
         echo "📂 Output directory (before run):"
         ls -la output/ 2>/dev/null || echo "No output directory yet"
+        echo ""
+        echo "📄 README file:"
+        ls -la README.md 2>/dev/null || echo "No README.md found"
     
     - name: Determine input file
       id: input-file
@@ -66,8 +71,8 @@ jobs:
             INPUT_FILE="$CSV_FILES"
             echo "Found CSV file: $INPUT_FILE"
           else
-            echo "❌ No CSV file found!"
-            exit 1
+            echo "⚠️ No CSV file found, will generate sample data"
+            INPUT_FILE=""
           fi
         fi
         
@@ -75,8 +80,12 @@ jobs:
         echo "INPUT_FILE_PATH=$INPUT_FILE" >> $GITHUB_ENV
         
         # Also get the filename without path for reference
-        INPUT_FILENAME=$(basename "$INPUT_FILE")
-        echo "input_filename=$INPUT_FILENAME" >> $GITHUB_OUTPUT
+        if [ -n "$INPUT_FILE" ]; then
+          INPUT_FILENAME=$(basename "$INPUT_FILE")
+          echo "input_filename=$INPUT_FILENAME" >> $GITHUB_OUTPUT
+        else
+          echo "input_filename=none" >> $GITHUB_OUTPUT
+        fi
     
     - name: Run feature engineering (CI)
       id: run-pipeline
@@ -91,6 +100,7 @@ jobs:
         
         echo "🚀 Starting CI pipeline..."
         echo "Input file: ${{ steps.input-file.outputs.input_file }}"
+        echo "Triggered by: ${{ github.event_name }}"
         
         # Create output directory if it doesn't exist
         mkdir -p output
@@ -105,7 +115,7 @@ jobs:
         # Check if output files were generated
         echo "📊 Generated output files:"
         if [ -d "output" ]; then
-          find output -type f -name "*.csv" -o -name "*.pkl" -o -name "*.json" -o -name "*sample_data*" | sed 's/^/- /'
+          find output -type f \( -name "*.csv" -o -name "*.pkl" -o -name "*.json" -o -name "*sample_data*" \) | sed 's/^/- /'
           OUTPUT_COUNT=$(find output -type f | wc -l)
           echo "Total output files: $OUTPUT_COUNT"
           
@@ -142,9 +152,11 @@ jobs:
         
         echo "## 🏃 Run Information" >> $GITHUB_STEP_SUMMARY
         echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Input File:** \`${{ steps.input-file.outputs.input_file }}\`" >> $GITHUB_STEP_SUMMARY
         echo "- **Force Process:** ${{ github.event.inputs.force_process || 'false' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
         echo "- **Run Time:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
