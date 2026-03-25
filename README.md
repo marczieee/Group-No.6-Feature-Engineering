@@ -1,7 +1,6 @@
  ## 📊 Group 6 — Feature Engineering CSV Pipeline
 
- DEV OPS | Automated CSV Data Processing using GitHub Actions CI Pipeline 
-
+ DEV OPS | Automated CSV Data Processing
 ---
 
 ## 👥 Group Members
