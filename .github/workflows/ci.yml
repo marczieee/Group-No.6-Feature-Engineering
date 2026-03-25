@@ -10,7 +10,8 @@ on:
     inputs:
       force_process:
         description: 'Force process even if files unchanged'
-        required: false,
+        required: false
+        default: false
         type: boolean
 
 permissions:
